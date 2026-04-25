@@ -1,0 +1,248 @@
+<section class="dashboard">
+  <div class="dashboard__container">
+    @if (profile()) {
+      <section class="dashboard__hero">
+        <p class="dashboard__eyebrow">Gestion del rendimiento</p>
+        <h1 class="dashboard__title">Panel de trabajo</h1>
+        <p class="dashboard__subtitle">
+          Acceda solo a los modulos habilitados segun su rol tecnico, actor funcional y alcance operativo.
+        </p>
+
+        <div class="context-bar">
+          <div class="context-bar__item">
+            <span class="context-bar__label">Ciclo</span>
+            <span class="context-bar__value">{{ profile()!.context.cycleName || 'Sin ciclo activo' }}</span>
+          </div>
+          <div class="context-bar__divider"></div>
+          <div class="context-bar__item">
+            <span class="context-bar__label">Actor</span>
+            <span class="context-bar__value">{{ profile()!.context.functionalActor }}</span>
+          </div>
+          <div class="context-bar__divider"></div>
+          <div class="context-bar__item">
+            <span class="context-bar__label">Unidad</span>
+            <span class="context-bar__value">{{ profile()!.context.orgUnitName || 'Sin unidad vinculada' }}</span>
+          </div>
+        </div>
+      </section>
+
+      @for (notice of notices(); track notice) {
+        <div class="alert alert--error" role="alert">
+          <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+          </svg>
+          <span>{{ notice }}</span>
+        </div>
+      }
+
+      <section class="dashboard__modules">
+        @if (profile()!.featureAccess.canViewAssignments) {
+          <a routerLink="/dashboard/hr/assignments" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--blue">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M10 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-5.6 8c0-3.1 2.5-5.6 5.6-5.6s5.6 2.5 5.6 5.6H4.4Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--blue">RRHH / ORH base</span>
+            </div>
+            <strong class="module-card__title">Asignaciones</strong>
+            <p class="module-card__desc">Relaciones evaluador-evaluado visibles dentro de su alcance operativo.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canViewCatalogs) {
+          <a routerLink="/dashboard/admin/catalogs" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--purple">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M3 3h14v2H3V3Zm0 4h14v2H3V7Zm0 4h10v2H3v-2Zm0 4h7v2H3v-2Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--purple">Administracion GRD base</span>
+            </div>
+            <strong class="module-card__title">Catalogos minimos</strong>
+            <p class="module-card__desc">Tipos de valor, formulas y segmentos vigentes para el ciclo operativo.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canViewIndicators) {
+          <a routerLink="/dashboard/indicators" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--green">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M3 17h14v-1.5H3V17Zm2-3.5h2V7H5v6.5Zm4 0h2V4H9v9.5Zm4 0h2V9.5h-2v4Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--green">Metas e indicadores</span>
+            </div>
+            <strong class="module-card__title">Indicadores</strong>
+            <p class="module-card__desc">Consulta y mantenimiento de indicadores segun el alcance autorizado.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canViewGoals) {
+          <a routerLink="/dashboard/goals" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--brand">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm3.7 6.3-4.2 4.2a.8.8 0 0 1-1.1 0L6.3 10.4l1.1-1.1 1.5 1.5 3.7-3.7 1.1 1.2Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--brand">Metas e indicadores</span>
+            </div>
+            <strong class="module-card__title">Metas</strong>
+            <p class="module-card__desc">Metas del ciclo activo, visibles y gestionables segun su actor funcional.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canViewFinalEvaluations) {
+          <a routerLink="/dashboard/evaluacion-final" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--teal">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4.7 10.8h10.6v-1.6H4.7v1.6Zm0-4h10.6V5.2H4.7v1.6Zm0 8h7.2v-1.6H4.7v1.6Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--teal">Lote 3 evaluacion</span>
+            </div>
+            <strong class="module-card__title">Evaluacion final</strong>
+            <p class="module-card__desc">Consulta consolidada del evaluado y, si aplica, gestion del cierre evaluativo.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canViewDocuments) {
+          <a
+            routerLink="/dashboard/documentos"
+            [queryParams]="documentsQueryParams()"
+            class="module-card"
+          >
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--orange">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.4L11.6 2H6Zm5 1.2L14.8 7H12a1 1 0 0 1-1-1V3.2ZM7 10h6v1.5H7V10Zm0 3h4v1.5H7V13Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--orange">Lote 4 documental</span>
+            </div>
+            <strong class="module-card__title">Documentos firmados</strong>
+            <p class="module-card__desc">Flujo documental, firma preparada y consulta de metadata segun el alcance autorizado.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canViewImprovements) {
+          <a
+            routerLink="/dashboard/oportunidades-mejora"
+            [queryParams]="improvementsQueryParams()"
+            class="module-card"
+          >
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--teal">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M3 3h14v2H3V3Zm0 4h14v2H3V7Zm0 4h10v2H3v-2Zm0 4h7v2H3v-2Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--teal">Lote 4 mejora continua</span>
+            </div>
+            <strong class="module-card__title">Oportunidades de mejora</strong>
+            <p class="module-card__desc">Registro, seguimiento y cierre conservador dentro de sus asignaciones o de su propio flujo.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canViewReports) {
+          <a routerLink="/dashboard/reportes" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--blue">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M3 17h14v-1.5H3V17Zm2-3.5h2V7H5v6.5Zm4 0h2V4H9v9.5Zm4 0h2V9.5h-2v4Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--blue">Lote 5 reportes</span>
+            </div>
+            <strong class="module-card__title">Reportes operativos</strong>
+            <p class="module-card__desc">Lectura consolidada y exportacion CSV segura para supervision institucional del ciclo.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canViewNotifications) {
+          <a routerLink="/dashboard/notificaciones" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--purple">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M10 2.2a4.4 4.4 0 0 0-4.4 4.4v2.2c0 .6-.2 1.2-.5 1.7L4 12.2V14h12v-1.8l-1.1-1.7c-.3-.5-.5-1.1-.5-1.7V6.6A4.4 4.4 0 0 0 10 2.2Zm0 15.1a2.1 2.1 0 0 0 2-1.5H8a2.1 2.1 0 0 0 2 1.5Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--purple">Lote 5 bandeja interna</span>
+            </div>
+            <strong class="module-card__title">Notificaciones</strong>
+            <p class="module-card__desc">Bandeja e historial personal con lectura controlada segun el usuario autenticado.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canViewConsents) {
+          <a routerLink="/dashboard/consentimientos" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--green">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm3.7 6.3-4.2 4.2a.8.8 0 0 1-1.1 0L6.3 10.4l1.1-1.1 1.5 1.5 3.7-3.7 1.1 1.2Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--green">Lote 5 consentimiento</span>
+            </div>
+            <strong class="module-card__title">Consentimientos</strong>
+            <p class="module-card__desc">Aceptaciones self-service y trazabilidad minima del propio usuario dentro del sistema.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+      </section>
+
+      @if (!hasVisibleModules()) {
+        <div class="dashboard__empty">
+          <strong>No tiene modulos GDR operativos habilitados en este momento.</strong>
+          <span>Revise su vinculacion con persona HR, rol tecnico y asignaciones del ciclo activo.</span>
+        </div>
+      }
+    } @else if (errorMessage()) {
+      <div class="alert alert--error" role="alert">
+        <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+        </svg>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    } @else {
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <span>Cargando panel protegido...</span>
+      </div>
+    }
+  </div>
+</section>

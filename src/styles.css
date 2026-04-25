@@ -1,0 +1,42 @@
+:root {
+  --color-red: #c81f25;
+  --color-red-dark: #9f171c;
+  --color-surface: rgba(255, 255, 255, 0.9);
+  --color-surface-strong: #ffffff;
+  --color-border: rgba(15, 23, 42, 0.12);
+  --color-text: #162032;
+  --color-muted: #5f6b7d;
+  --color-primary: #2b74c8;
+  --color-primary-dark: #1f5aa0;
+  --shadow-soft: 0 24px 60px rgba(15, 23, 42, 0.12);
+  --font-base: "Segoe UI", Candara, "Trebuchet MS", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font-base);
+  color: var(--color-text);
+  background:
+    radial-gradient(circle at top, rgba(200, 31, 37, 0.08), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, #eef3f8 100%);
+}
+
+body,
+app-root {
+  min-height: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input {
+  font: inherit;
+}

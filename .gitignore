@@ -1,0 +1,39 @@
+# --- DEPENDENCIAS Y COMPILACIÓN ---
+node_modules/
+**/node_modules/
+.angular/
+dist/
+tmp/
+out/
+build/
+
+# --- LOGS ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+*.log
+# --- SEGURIDAD ---
+.env
+.env.*
+*.local
+credentials.json
+
+# --- IDEs & OS ---
+.vscode/
+.idea/
+*.sln
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- ARCHIVOS DE PROCESO ---
+
+**/*.pdf
+**/*.docx
+
+# --- HERRAMIENTAS IA ---
+.claude/
+.cursor/
+.cursorrules
+CLAUDE.md
