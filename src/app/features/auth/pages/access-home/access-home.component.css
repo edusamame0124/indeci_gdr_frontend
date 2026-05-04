@@ -50,50 +50,6 @@
   font-size: 0.84rem;
 }
 
-/* ── Context bar ── */
-.context-bar {
-  display: flex;
-  align-items: stretch;
-  gap: 0;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  overflow: hidden;
-  max-width: 520px;
-}
-
-.context-bar__item {
-  flex: 1;
-  padding: 14px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.context-bar__divider {
-  width: 1px;
-  background: #e5e7eb;
-  flex: 0 0 1px;
-}
-
-.context-bar__label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #8b95a5;
-  font-weight: 600;
-}
-
-.context-bar__value {
-  color: #1a1a2e;
-  font-size: 0.84rem;
-  font-weight: 600;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
 /* ── Module cards grid ── */
 .dashboard__modules {
   display: grid;
@@ -137,6 +93,9 @@
   display: grid;
   place-items: center;
   flex: 0 0 auto;
+  background: rgba(100, 116, 139, 0.08);
+  color: #64748b;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .module-card__icon svg {
@@ -145,34 +104,23 @@
   fill: currentColor;
 }
 
-.module-card__icon--blue {
-  background: rgba(29, 78, 216, 0.08);
-  color: #1d4ed8;
-}
-
-.module-card__icon--purple {
-  background: rgba(124, 58, 237, 0.08);
-  color: #7c3aed;
-}
-
-.module-card__icon--green {
-  background: rgba(4, 120, 87, 0.08);
-  color: #047857;
-}
-
-.module-card__icon--brand {
-  background: rgba(127, 23, 20, 0.06);
-  color: #7f1714;
-}
-
-.module-card__icon--orange {
-  background: rgba(194, 65, 12, 0.08);
-  color: #c2410c;
-}
-
+/* Color modifiers neutralized for a sober, corporate look.
+   All icons share the same subtle palette and shift to the
+   institutional red on card hover. */
+.module-card__icon--blue,
+.module-card__icon--purple,
+.module-card__icon--green,
+.module-card__icon--brand,
+.module-card__icon--orange,
 .module-card__icon--teal {
-  background: rgba(15, 118, 110, 0.08);
-  color: #0f766e;
+  background: rgba(100, 116, 139, 0.08);
+  color: #64748b;
+}
+
+.module-card:hover .module-card__icon,
+.module-card:focus-visible .module-card__icon {
+  background: rgba(127, 23, 20, 0.08);
+  color: #7f1714;
 }
 
 /* ── Module card eyebrow ── */
@@ -181,18 +129,30 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 700;
+  color: #64748b;
+  transition: color 0.2s ease;
 }
 
-.module-card__eyebrow--blue { color: #1d4ed8; }
-.module-card__eyebrow--purple { color: #7c3aed; }
-.module-card__eyebrow--green { color: #047857; }
-.module-card__eyebrow--brand { color: #7f1714; }
-.module-card__eyebrow--orange { color: #c2410c; }
-.module-card__eyebrow--teal { color: #0f766e; }
+/* Color modifiers neutralized for a sober, corporate look.
+   All eyebrows share the same subtle base color and shift to the
+   institutional red on card hover. */
+.module-card__eyebrow--blue,
+.module-card__eyebrow--purple,
+.module-card__eyebrow--green,
+.module-card__eyebrow--brand,
+.module-card__eyebrow--orange,
+.module-card__eyebrow--teal {
+  color: #64748b;
+}
+
+.module-card:hover .module-card__eyebrow,
+.module-card:focus-visible .module-card__eyebrow {
+  color: #7f1714;
+}
 
 /* ── Module card content ── */
 .module-card__title {
-  font-size: 0.92rem;
+  font-size: 0.80rem;
   color: #1a1a2e;
   line-height: 1.3;
 }
@@ -295,17 +255,6 @@
 @media (max-width: 720px) {
   .dashboard {
     padding: 14px 14px 22px;
-  }
-
-  .context-bar {
-    flex-direction: column;
-    gap: 0;
-    max-width: 100%;
-  }
-
-  .context-bar__divider {
-    width: 100%;
-    height: 1px;
   }
 
   .dashboard__modules {

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HrAssignmentSummary } from '../../../../core/hr/hr.models';
 import { HrService } from '../../../../core/hr/hr.service';
@@ -7,6 +7,7 @@ import { HrService } from '../../../../core/hr/hr.service';
   selector: 'app-assignment-list',
   standalone: true,
   imports: [RouterLink],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
       <div class="page__header">
@@ -181,7 +182,7 @@ import { HrService } from '../../../../core/hr/hr.service';
 
     table {
       width: 100%;
-      min-width: 720px;
+      min-width: 600px;
       border-collapse: collapse;
     }
 

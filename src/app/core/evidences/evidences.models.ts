@@ -3,16 +3,24 @@ export interface EvidenceSummary {
   goalId: number;
   title: string;
   detail: string | null;
+  evidenceTypeCode: string;
+  evidenceTypeName: string;
+  expectedFormatCode: string;
+  expectedFormatName: string;
   expectedDate: string | null;
   statusCode: string;
   statusName: string;
   latestReviewComment: string | null;
+  latestReviewQualificationCode?: string | null;
+  latestReviewQualificationName?: string | null;
 }
 
 export interface EvidenceReview {
   id: number;
   statusCode: string;
   statusName: string;
+  qualificationCode?: string | null;
+  qualificationName?: string | null;
   comment: string | null;
   correctiveActionDetail: string | null;
   correctiveActionStatus: string | null;
@@ -27,6 +35,10 @@ export interface EvidenceDetail {
   indicatorName: string;
   title: string;
   detail: string | null;
+  evidenceTypeCode: string;
+  evidenceTypeName: string;
+  expectedFormatCode: string;
+  expectedFormatName: string;
   expectedDate: string | null;
   statusCode: string;
   statusName: string;
@@ -38,11 +50,13 @@ export interface EvidenceDetail {
 export interface EvidenceUpsertRequest {
   title: string;
   detail: string | null;
+  evidenceTypeCode: string;
+  expectedFormatCode: string;
   expectedDate: string | null;
 }
 
 export interface EvidenceReviewRequest {
-  decisionCode: string;
+  qualificationCode: string;
   comment: string | null;
   correctiveActionDetail: string | null;
 }

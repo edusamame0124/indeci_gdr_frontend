@@ -133,7 +133,13 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
           <form [formGroup]="form" (ngSubmit)="saveIndicator()" class="form-grid">
             <label class="field field--half">
               <span>Codigo</span>
-              <input type="text" formControlName="code" placeholder="IND-002" />
+              <input
+                type="text"
+                [value]="displayedCode()"
+                readonly
+                placeholder="IND-00X"
+                class="field__readonly"
+              />
             </label>
 
             <label class="field field--half">
@@ -142,8 +148,8 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
             </label>
 
             <label class="field field--full">
-              <span>Descripcion</span>
-              <textarea rows="3" formControlName="description" placeholder="Descripcion opcional"></textarea>
+              <span>Fórmula</span>
+              <textarea rows="3" formControlName="description" placeholder="Opcional(Si aplica)"></textarea>
             </label>
 
             <label class="field field--third">
@@ -157,7 +163,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
             </label>
 
             <label class="field field--third">
-              <span>Formula</span>
+              <span>Tipo de Fórmula (Indicador)</span>
               <select formControlName="formulaId">
                 <option [ngValue]="null">Seleccione</option>
                 @for (item of formulas(); track item.id) {
@@ -495,6 +501,12 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
       box-sizing: border-box;
     }
 
+    .field__readonly {
+      background: #f4f6fa;
+      color: #475467;
+      cursor: not-allowed;
+    }
+
     input:focus,
     textarea:focus,
     select:focus {
@@ -623,9 +635,9 @@ export class IndicatorListComponent {
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly formError = signal('');
+  readonly displayedCode = signal('');
 
   readonly form = this.fb.group({
-    code: ['', [Validators.required]],
     name: ['', [Validators.required]],
     description: [''],
     valueTypeId: [null as number | null, [Validators.required]],
@@ -645,8 +657,8 @@ export class IndicatorListComponent {
   editIndicator(indicator: Indicator): void {
     this.editingIndicatorId.set(indicator.id);
     this.formError.set('');
+    this.displayedCode.set(indicator.code);
     this.form.reset({
-      code: indicator.code,
       name: indicator.name,
       description: indicator.description ?? '',
       valueTypeId: indicator.valueTypeId,
@@ -670,7 +682,6 @@ export class IndicatorListComponent {
 
     const raw = this.form.getRawValue();
     const payload: IndicatorUpsertRequest = {
-      code: (raw.code ?? '').trim(),
       name: (raw.name ?? '').trim(),
       description: (raw.description ?? '').trim() || null,
       valueTypeId: raw.valueTypeId as number,
@@ -706,8 +717,8 @@ export class IndicatorListComponent {
     this.editingIndicatorId.set(null);
     this.formError.set('');
     this.saving.set(false);
+    this.displayedCode.set('');
     this.form.reset({
-      code: '',
       name: '',
       description: '',
       valueTypeId: null,

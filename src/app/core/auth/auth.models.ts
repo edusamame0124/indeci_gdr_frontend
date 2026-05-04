@@ -30,7 +30,12 @@ export type ProtectedFeature =
   | 'improvements'
   | 'reports'
   | 'notifications'
-  | 'consents';
+  | 'consents'
+  | 'orhReception'
+  | 'orhDistinguidosCandidates'
+  | 'juntaDistinguidosAssign'
+  | 'userManagement'
+  | 'assignmentManagement';
 
 export interface FeatureAccess {
   canAccessDashboard: boolean;
@@ -57,6 +62,11 @@ export interface FeatureAccess {
   canViewReports: boolean;
   canViewNotifications: boolean;
   canViewConsents: boolean;
+  canViewOrhReception: boolean;
+  canManageUsers: boolean;
+  canViewDistinguidoCandidates: boolean;
+  canManageDistinguidoRequisites: boolean;
+  canAssignDistinguido: boolean;
 }
 
 export interface ActiveCycleContext {

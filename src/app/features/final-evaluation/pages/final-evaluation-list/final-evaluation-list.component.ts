@@ -84,6 +84,7 @@ import { FinalEvaluationService } from '../../../../core/final-evaluation/final-
                   <th>Evaluador</th>
                   <th>Ciclo</th>
                   <th class="th--right">Puntaje</th>
+                  <th>Calificación</th>
                   <th>Estado</th>
                   <th class="th--actions">Acciones</th>
                 </tr>
@@ -96,6 +97,22 @@ import { FinalEvaluationService } from '../../../../core/final-evaluation/final-
                     <td>{{ item.evaluatorName }}</td>
                     <td>{{ item.cycleName }}</td>
                     <td class="td--right td--mono">{{ item.consolidatedScore ?? 'Pendiente' }}</td>
+                    <td>
+                      @if (item.qualitativeRatingCode) {
+                        <span
+                          class="rating-badge"
+                          [class.rating-badge--good]="item.qualitativeRatingCode === 'BUEN_RENDIMIENTO' || item.qualitativeRatingCode === 'DISTINGUIDO'"
+                          [class.rating-badge--warn]="item.qualitativeRatingCode === 'SUJETO_OBSERVACION'"
+                          [class.rating-badge--bad]="item.qualitativeRatingCode === 'DESAPROBADO'"
+                          [class.rating-badge--neutral]="item.qualitativeRatingCode === 'NO_CALIFICABLE'"
+                          [title]="'Segmento: ' + (item.segmentName ?? 'Sin segmento')"
+                        >
+                          {{ item.qualitativeRatingLabel }}
+                        </span>
+                      } @else {
+                        <span class="rating-badge rating-badge--pending">Pendiente</span>
+                      }
+                    </td>
                     <td>
                       <span class="status-badge">
                         <span class="status-badge__dot"></span>
@@ -143,6 +160,22 @@ import { FinalEvaluationService } from '../../../../core/final-evaluation/final-
                   <div class="eval-card__field">
                     <span>Puntaje</span>
                     <strong>{{ item.consolidatedScore ?? 'Pendiente' }}</strong>
+                  </div>
+                  <div class="eval-card__field">
+                    <span>Calificación</span>
+                    <strong>
+                      @if (item.qualitativeRatingCode) {
+                        <span
+                          class="rating-badge rating-badge--sm"
+                          [class.rating-badge--good]="item.qualitativeRatingCode === 'BUEN_RENDIMIENTO' || item.qualitativeRatingCode === 'DISTINGUIDO'"
+                          [class.rating-badge--warn]="item.qualitativeRatingCode === 'SUJETO_OBSERVACION'"
+                          [class.rating-badge--bad]="item.qualitativeRatingCode === 'DESAPROBADO'"
+                          [class.rating-badge--neutral]="item.qualitativeRatingCode === 'NO_CALIFICABLE'"
+                        >{{ item.qualitativeRatingLabel }}</span>
+                      } @else {
+                        <span class="rating-badge rating-badge--sm rating-badge--pending">Pendiente</span>
+                      }
+                    </strong>
                   </div>
                 </div>
                 <div class="eval-card__actions">
@@ -207,6 +240,14 @@ import { FinalEvaluationService } from '../../../../core/final-evaluation/final-
     .status-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; font-size:0.74rem; font-weight:600; line-height:1; background:#f0f1f3; color:#475467; }
     .status-badge--sm { padding:3px 10px; font-size:0.72rem; }
     .status-badge__dot { width:7px; height:7px; border-radius:50%; background:currentColor; flex:0 0 auto; }
+
+    .rating-badge { display:inline-flex; align-items:center; padding:4px 12px; border-radius:999px; font-size:0.74rem; font-weight:600; line-height:1; background:#f0f1f3; color:#475467; }
+    .rating-badge--sm { padding:3px 10px; font-size:0.72rem; }
+    .rating-badge--good { background:#dcfce7; color:#15803d; }
+    .rating-badge--warn { background:#fef3c7; color:#a16207; }
+    .rating-badge--bad { background:#fee2e2; color:#b91c1c; }
+    .rating-badge--neutral { background:#e0e7ff; color:#4338ca; }
+    .rating-badge--pending { background:#f1f5f9; color:#94a3b8; font-style:italic; }
 
     /* ── Loading ── */
     .loading-state { display:flex; align-items:center; justify-content:center; gap:10px; padding:40px 16px; color:#667085; font-size:0.84rem; }

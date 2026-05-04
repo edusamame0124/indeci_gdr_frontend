@@ -1,3 +1,18 @@
+export type QualitativeRatingCode =
+  | 'BUEN_RENDIMIENTO'
+  | 'SUJETO_OBSERVACION'
+  | 'DISTINGUIDO'
+  | 'DESAPROBADO'
+  | 'NO_CALIFICABLE';
+
+export const QUALITATIVE_RATING_LABELS: Record<QualitativeRatingCode, string> = {
+  BUEN_RENDIMIENTO: 'Buen rendimiento',
+  SUJETO_OBSERVACION: 'Rendimiento sujeto a observación',
+  DISTINGUIDO: 'Rendimiento distinguido',
+  DESAPROBADO: 'Desaprobado',
+  NO_CALIFICABLE: 'No calificable'
+};
+
 export interface FinalEvaluationSummary {
   assignmentId: number;
   evaluatedId: number;
@@ -6,6 +21,10 @@ export interface FinalEvaluationSummary {
   cycleName: string;
   evaluationId: number | null;
   consolidatedScore: number | null;
+  qualitativeRatingCode: QualitativeRatingCode | null;
+  qualitativeRatingLabel: string | null;
+  segmentCode: string | null;
+  segmentName: string | null;
   status: string;
 }
 
@@ -28,6 +47,10 @@ export interface FinalEvaluationDetail {
   evaluatorName: string;
   cycleName: string;
   consolidatedScore: number | null;
+  qualitativeRatingCode: QualitativeRatingCode | null;
+  qualitativeRatingLabel: string | null;
+  segmentCode: string | null;
+  segmentName: string | null;
   status: string;
   evaluationComment: string | null;
   details: ScoreDetail[];
@@ -41,6 +64,10 @@ export interface ResultSummary {
   evaluatorName: string;
   cycleName: string;
   consolidatedScore: number;
+  qualitativeRatingCode: QualitativeRatingCode | null;
+  qualitativeRatingLabel: string | null;
+  segmentCode: string | null;
+  segmentName: string | null;
   status: string;
 }
 

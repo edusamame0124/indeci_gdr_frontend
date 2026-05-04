@@ -4,7 +4,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { GoalsService } from '../../../../core/goals/goals.service';
 import { GoalDetail } from '../../../../core/goals/goals.models';
-import { EvidenceSummary, EvidenceUpsertRequest } from '../../../../core/evidences/evidences.models';
+import {
+  EvidenceDetail,
+  EvidenceReviewRequest,
+  EvidenceSummary,
+  EvidenceUpsertRequest
+} from '../../../../core/evidences/evidences.models';
+import { qualificationOptionsForEvidenceType } from '../../../../core/evidences/evidence-qualification.constants';
 import { EvidencesService } from '../../../../core/evidences/evidences.service';
 import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
@@ -119,6 +125,8 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                 <tr>
                   <th class="th--num">#</th>
                   <th>Título</th>
+                  <th>Tipo</th>
+                  <th>Formato</th>
                   <th>Estado</th>
                   <th>Fecha esperada</th>
                   <th>Último seguimiento</th>
@@ -130,6 +138,8 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                   <tr>
                     <td class="td--num">{{ (currentPage() - 1) * pageSize + i + 1 }}</td>
                     <td class="td--title">{{ evidence.title }}</td>
+                    <td>{{ displayEvidenceType(evidence) }}</td>
+                    <td>{{ displayExpectedFormat(evidence) }}</td>
                     <td>
                       <span class="status-badge"
                             [class.status-badge--approved]="evidence.statusCode === 'APPROVED'"
@@ -146,7 +156,17 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                         {{ evidence.expectedDate || 'Sin fecha' }}
                       </span>
                     </td>
-                    <td class="td--comment">{{ evidence.latestReviewComment || 'Sin revisión registrada' }}</td>
+                    <td class="td--comment">
+                      @if (evidence.latestReviewQualificationName) {
+                        <div class="td--qual-line">{{ evidence.latestReviewQualificationName }}</div>
+                      }
+                      @if (evidence.latestReviewComment) {
+                        <div class="td--qual-sub">{{ evidence.latestReviewComment }}</div>
+                      }
+                      @if (!evidence.latestReviewQualificationName && !evidence.latestReviewComment) {
+                        Sin revisión registrada
+                      }
+                    </td>
                     <td>
                       <div class="actions-cell">
                         @if (canManageEvidence()) {
@@ -163,6 +183,14 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                           </svg>
                           Detalle
                         </button>
+                        @if (canReviewEvidence()) {
+                          <button type="button" class="btn btn--outline btn--xs" (click)="openCalificarModal(evidence)">
+                            <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+                              <path d="M15.3 4.7 9 11l-2.3-2.3-1.1 1.1L9 13.2l7.4-7.4-1.1-1.1ZM4 16h9v-1.6H4V16Z"/>
+                            </svg>
+                            Calificar
+                          </button>
+                        }
                       </div>
                     </td>
                   </tr>
@@ -186,12 +214,30 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                 </div>
                 <div class="evidence-card__meta">
                   <div class="evidence-card__field">
+                    <span>Tipo</span>
+                    <strong>{{ displayEvidenceType(evidence) }}</strong>
+                  </div>
+                  <div class="evidence-card__field">
+                    <span>Formato</span>
+                    <strong>{{ displayExpectedFormat(evidence) }}</strong>
+                  </div>
+                  <div class="evidence-card__field">
                     <span>Fecha esperada</span>
                     <strong>{{ evidence.expectedDate || 'Sin fecha' }}</strong>
                   </div>
-                  <div class="evidence-card__field">
+                  <div class="evidence-card__field evidence-card__field--full">
                     <span>Seguimiento</span>
-                    <strong>{{ evidence.latestReviewComment || 'Sin revisión registrada' }}</strong>
+                    <strong>
+                      @if (evidence.latestReviewQualificationName) {
+                        <span class="evidence-card__qual">{{ evidence.latestReviewQualificationName }}</span>
+                      }
+                      @if (evidence.latestReviewComment) {
+                        <span class="evidence-card__qual-sub">{{ evidence.latestReviewComment }}</span>
+                      }
+                      @if (!evidence.latestReviewQualificationName && !evidence.latestReviewComment) {
+                        Sin revisión registrada
+                      }
+                    </strong>
                   </div>
                 </div>
                 <div class="evidence-card__actions">
@@ -199,6 +245,9 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                     <button type="button" class="btn btn--outline btn--sm btn--full" (click)="openEditModal(evidence.id)">Editar</button>
                   }
                   <button type="button" class="btn btn--ghost btn--sm btn--full" (click)="openDetail(evidence.id)">Detalle</button>
+                  @if (canReviewEvidence()) {
+                    <button type="button" class="btn btn--outline btn--sm btn--full" (click)="openCalificarModal(evidence)">Calificar</button>
+                  }
                 </div>
               </article>
             }
@@ -251,6 +300,26 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
               <input type="text" formControlName="title" placeholder="Título de la evidencia" />
             </label>
 
+            <label class="field">
+              <span class="field__label">Tipo evidencia <span class="field__required">*</span></span>
+              <select formControlName="evidenceTypeCode">
+                <option value="">Seleccione...</option>
+                @for (option of evidenceTypeOptions; track option.code) {
+                  <option [value]="option.code">{{ option.name }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field__label">Formato esperado <span class="field__required">*</span></span>
+              <select formControlName="expectedFormatCode">
+                <option value="">Seleccione...</option>
+                @for (option of expectedFormatOptions; track option.code) {
+                  <option [value]="option.code">{{ option.name }}</option>
+                }
+              </select>
+            </label>
+
             <label class="field field--full">
               <span class="field__label">Detalle funcional</span>
               <textarea rows="4" formControlName="detail" placeholder="Detalle o referencia funcional"></textarea>
@@ -268,6 +337,54 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                   <span class="loading-spinner loading-spinner--sm"></span>
                 }
                 {{ editingEvidenceId() ? 'Actualizar' : 'Registrar' }}
+              </button>
+            </div>
+          </form>
+        </section>
+      }
+
+      @if (calificarModalOpen() && reviewTarget()) {
+        <div class="modal-backdrop" (click)="closeCalificarModal()"></div>
+        <section class="modal" role="dialog" aria-modal="true" aria-label="Calificar evidencia">
+          <div class="modal__header">
+            <div>
+              <p class="modal__eyebrow">Evidencias</p>
+              <h2>Calificar evidencia</h2>
+              <p class="modal__subtitle modal__subtitle--strong">{{ displayEvidenceType(reviewTarget()!) }}</p>
+              <p class="modal__subtitle">{{ reviewTarget()!.title }}</p>
+            </div>
+            <button type="button" class="modal__close" (click)="closeCalificarModal()" aria-label="Cerrar modal">
+              <svg viewBox="0 0 20 20"><path d="M14.3 5.7l-1-1L10 8l-3.3-3.3-1 1L9 9l-3.3 3.3 1 1L10 10l3.3 3.3 1-1L11 9l3.3-3.3Z"/></svg>
+            </button>
+          </div>
+
+          <form [formGroup]="calificarForm" (ngSubmit)="submitCalificar()" class="form-grid">
+            <label class="field field--full">
+              <span class="field__label">{{ qualificationFieldLabel() }} <span class="field__required">*</span></span>
+              <select formControlName="qualificationCode">
+                @for (opt of qualificationOptionsFor(reviewTarget()!.evidenceTypeCode); track opt.code) {
+                  <option [value]="opt.code">{{ opt.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field field--full">
+              <span class="field__label">Comentario</span>
+              <textarea rows="3" formControlName="comment" placeholder="Comentario de revisión"></textarea>
+            </label>
+
+            <label class="field field--full">
+              <span class="field__label">Acción correctiva</span>
+              <textarea rows="3" formControlName="correctiveActionDetail" placeholder="Detalle de la acción correctiva (obligatoria si la calificación genera observación)"></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn--ghost" (click)="closeCalificarModal()">Cancelar</button>
+              <button type="submit" class="btn btn--primary" [disabled]="savingReview()">
+                @if (savingReview()) {
+                  <span class="loading-spinner loading-spinner--sm"></span>
+                }
+                Guardar calificación
               </button>
             </div>
           </form>
@@ -356,7 +473,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
     /* ── Desktop table ── */
     .desktop-table { display:block; width:100%; overflow-x:auto; }
-    table { width:100%; min-width:800px; border-collapse:collapse; }
+    table { width:100%; min-width:980px; border-collapse:collapse; }
     th, td { padding:11px 14px; text-align:left; border-bottom:1px solid #f1f3f5; vertical-align:middle; font-size:0.82rem; }
     th { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:#8b95a5; background:#f8fafc; font-weight:600; }
     td { color:#344054; line-height:1.45; }
@@ -366,6 +483,8 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .td--date { display:inline-flex; align-items:center; gap:5px; }
     .td--date-icon { width:14px; height:14px; fill:#8b95a5; flex:0 0 auto; }
     .td--comment { max-width:220px; color:#667085; font-size:0.78rem; overflow-wrap:anywhere; }
+    .td--qual-line { font-weight:600; color:#344054; display:block; }
+    .td--qual-sub { font-size:0.72rem; color:#667085; margin-top:4px; display:block; line-height:1.35; }
     tbody tr:hover { background:#fafbfc; }
     .actions-cell { display:flex; gap:6px; justify-content:flex-end; }
 
@@ -378,6 +497,9 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .evidence-card__field { display:flex; flex-direction:column; gap:2px; }
     .evidence-card__field span { font-size:0.66rem; text-transform:uppercase; letter-spacing:0.06em; color:#8b95a5; font-weight:600; }
     .evidence-card__field strong { color:#344054; font-size:0.78rem; font-weight:500; line-height:1.4; overflow-wrap:anywhere; }
+    .evidence-card__field--full { grid-column:1 / -1; }
+    .evidence-card__qual { display:block; font-weight:600; margin-bottom:2px; }
+    .evidence-card__qual-sub { display:block; font-size:0.72rem; color:#667085; font-weight:500; line-height:1.35; }
     .evidence-card__actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 
     /* ── Pagination ── */
@@ -404,6 +526,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .modal__eyebrow { margin:0 0 4px; font-size:0.68rem; font-weight:700; letter-spacing:0.08em; color:#8b95a5; text-transform:uppercase; }
     .modal__header h2 { margin:0; font-size:1.05rem; color:#1a1a2e; font-weight:700; }
     .modal__subtitle { margin:4px 0 0; color:#667085; font-size:0.78rem; line-height:1.5; }
+    .modal__subtitle--strong { color:#1a1a2e; font-weight:600; font-size:0.8rem; }
     .modal__close { border:none; background:transparent; color:#8b95a5; width:32px; height:32px; border-radius:8px; cursor:pointer; display:inline-grid; place-items:center; padding:0; }
     .modal__close svg { width:16px; height:16px; fill:currentColor; }
     .modal__close:hover { background:#f1f3f5; color:#475467; }
@@ -450,14 +573,40 @@ export class EvidenceListComponent {
   readonly errorMessage = signal('');
   readonly currentPage = signal(1);
   readonly pageSize = 5;
+  readonly evidenceTypeOptions = [
+    { code: 'AVANCE', name: 'Evidencia de avance' },
+    { code: 'FINAL', name: 'Evidencia final' }
+  ];
+  readonly expectedFormatOptions = [
+    { code: 'IMAGEN', name: 'Imagen (JPG, PNG)' },
+    { code: 'DOCUMENTO', name: 'Documento (PDF, Word)' },
+    { code: 'ACTA', name: 'Acta (PDF)' },
+    { code: 'EXCEL', name: 'Archivo Excel' },
+    { code: 'OTRO', name: 'Otro formato' }
+  ];
   readonly canManageEvidence = computed(() =>
     this.authService.featureAccess()?.canManageEvidences ?? false
+  );
+  readonly canReviewEvidence = computed(() =>
+    this.authService.featureAccess()?.canReviewEvidences ?? false
   );
 
   readonly form = this.fb.group({
     title: ['', [Validators.required]],
     detail: [''],
+    evidenceTypeCode: ['', [Validators.required]],
+    expectedFormatCode: ['', [Validators.required]],
     expectedDate: ['']
+  });
+
+  readonly calificarModalOpen = signal(false);
+  readonly reviewTarget = signal<EvidenceSummary | null>(null);
+  readonly savingReview = signal(false);
+
+  readonly calificarForm = this.fb.group({
+    qualificationCode: ['', [Validators.required]],
+    comment: [''],
+    correctiveActionDetail: ['']
   });
 
   private goalId = 0;
@@ -480,6 +629,28 @@ export class EvidenceListComponent {
     return Math.min(this.currentPage() * this.pageSize, this.evidences().length);
   }
 
+  displayEvidenceType(evidence: EvidenceSummary): string {
+    const current = evidence as EvidenceSummary & {
+      evidenceTypeCode?: string | null;
+      evidenceTypeName?: string | null;
+    };
+    if (current.evidenceTypeName) {
+      return current.evidenceTypeName;
+    }
+    return this.evidenceTypeOptions.find((option) => option.code === current.evidenceTypeCode)?.name ?? 'Sin tipo';
+  }
+
+  displayExpectedFormat(evidence: EvidenceSummary): string {
+    const current = evidence as EvidenceSummary & {
+      expectedFormatCode?: string | null;
+      expectedFormatName?: string | null;
+    };
+    if (current.expectedFormatName) {
+      return current.expectedFormatName;
+    }
+    return this.expectedFormatOptions.find((option) => option.code === current.expectedFormatCode)?.name ?? 'Sin formato';
+  }
+
   goToPage(page: number): void {
     const clamped = Math.max(1, Math.min(page, this.totalPages()));
     this.currentPage.set(clamped);
@@ -490,7 +661,7 @@ export class EvidenceListComponent {
       return;
     }
     this.editingEvidenceId.set(null);
-    this.form.reset({ title: '', detail: '', expectedDate: '' });
+    this.form.reset({ title: '', detail: '', evidenceTypeCode: '', expectedFormatCode: '', expectedDate: '' });
     this.modalOpen.set(true);
   }
 
@@ -504,6 +675,8 @@ export class EvidenceListComponent {
         this.form.reset({
           title: evidence.title,
           detail: evidence.detail ?? '',
+          evidenceTypeCode: evidence.evidenceTypeCode,
+          expectedFormatCode: evidence.expectedFormatCode,
           expectedDate: evidence.expectedDate ?? ''
         });
         this.modalOpen.set(true);
@@ -522,6 +695,81 @@ export class EvidenceListComponent {
     this.saving.set(false);
   }
 
+  qualificationOptionsFor(evidenceTypeCode: string): { code: string; label: string }[] {
+    return qualificationOptionsForEvidenceType(evidenceTypeCode);
+  }
+
+  qualificationFieldLabel(): string {
+    return this.reviewTarget()?.evidenceTypeCode === 'FINAL' ? 'Estado final' : 'Estado avance';
+  }
+
+  openCalificarModal(evidence: EvidenceSummary): void {
+    if (!this.canReviewEvidence()) {
+      return;
+    }
+    const options = this.qualificationOptionsFor(evidence.evidenceTypeCode);
+    const defaultCode = options[0]?.code ?? '';
+    this.reviewTarget.set(evidence);
+    this.calificarForm.reset({
+      qualificationCode: defaultCode,
+      comment: '',
+      correctiveActionDetail: ''
+    });
+    this.errorMessage.set('');
+    this.calificarModalOpen.set(true);
+  }
+
+  closeCalificarModal(): void {
+    this.calificarModalOpen.set(false);
+    this.reviewTarget.set(null);
+    this.savingReview.set(false);
+  }
+
+  submitCalificar(): void {
+    if (!this.canReviewEvidence() || !this.reviewTarget()) {
+      return;
+    }
+    if (this.calificarForm.invalid) {
+      this.calificarForm.markAllAsTouched();
+      this.errorMessage.set('Seleccione la calificación de la evidencia.');
+      return;
+    }
+    const raw = this.calificarForm.getRawValue();
+    const code = (raw.qualificationCode ?? '').trim();
+    if (this.mapsToObserved(code)) {
+      if (!(raw.comment ?? '').trim()) {
+        this.errorMessage.set('La revisión observada requiere un comentario.');
+        return;
+      }
+      if (!(raw.correctiveActionDetail ?? '').trim()) {
+        this.errorMessage.set('La revisión observada requiere una acción correctiva.');
+        return;
+      }
+    }
+    const payload: EvidenceReviewRequest = {
+      qualificationCode: code,
+      comment: (raw.comment ?? '').trim() || null,
+      correctiveActionDetail: (raw.correctiveActionDetail ?? '').trim() || null
+    };
+    this.savingReview.set(true);
+    this.errorMessage.set('');
+    this.evidencesService.reviewEvidence(this.reviewTarget()!.id, payload).subscribe({
+      next: (updated: EvidenceDetail) => {
+        this.toastService.success('Calificación registrada', 'La revisión de la evidencia fue registrada correctamente.');
+        this.patchEvidenceSummaryFromDetail(updated);
+        this.closeCalificarModal();
+      },
+      error: (error: Error) => {
+        this.errorMessage.set(error.message);
+        this.savingReview.set(false);
+      }
+    });
+  }
+
+  private mapsToObserved(qualificationCode: string): boolean {
+    return qualificationCode !== 'LOGRADO' && qualificationCode !== 'PRESENTA_EVIDENCIA_FINAL';
+  }
+
   saveEvidence(): void {
     if (!this.canManageEvidence()) {
       this.errorMessage.set('No cuenta con permisos para registrar o actualizar evidencias.');
@@ -537,6 +785,8 @@ export class EvidenceListComponent {
     const payload: EvidenceUpsertRequest = {
       title: (raw.title ?? '').trim(),
       detail: (raw.detail ?? '').trim() || null,
+      evidenceTypeCode: raw.evidenceTypeCode as string,
+      expectedFormatCode: raw.expectedFormatCode as string,
       expectedDate: raw.expectedDate || null
     };
 
@@ -576,6 +826,25 @@ export class EvidenceListComponent {
         this.loading.set(false);
       }
     });
+  }
+
+  /** Actualiza solo la fila afectada usando la respuesta del POST /revision (sin re-listar la meta). */
+  private patchEvidenceSummaryFromDetail(updated: EvidenceDetail): void {
+    const latest = updated.reviews[0];
+    this.evidences.update((list) =>
+      list.map((row) =>
+        row.id === updated.id
+          ? {
+              ...row,
+              statusCode: updated.statusCode,
+              statusName: updated.statusName,
+              latestReviewComment: latest?.comment ?? null,
+              latestReviewQualificationCode: latest?.qualificationCode ?? null,
+              latestReviewQualificationName: latest?.qualificationName ?? null
+            }
+          : row
+      )
+    );
   }
 
   private loadEvidences(): void {

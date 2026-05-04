@@ -2,7 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { EvidenceDetail, EvidenceReviewRequest, EvidenceUpsertRequest } from '../../../../core/evidences/evidences.models';
+import { resolveQualificationHistoryLabel } from '../../../../core/evidences/evidence-qualification.constants';
+import {
+  EvidenceDetail,
+  EvidenceReview,
+  EvidenceUpsertRequest
+} from '../../../../core/evidences/evidences.models';
 import { EvidencesService } from '../../../../core/evidences/evidences.service';
 import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
@@ -26,7 +31,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
       <div class="page__header">
         <div class="page__header-left">
           <h1>Detalle de evidencia</h1>
-          <p class="page__subtitle">Revise el estado actual, registre observaciones y gestione la subsanación.</p>
+          <p class="page__subtitle">Consulte el registro funcional, el historial de calificaciones y gestione la subsanación cuando corresponda.</p>
         </div>
         <a [routerLink]="backToGoalLink()" class="btn btn--outline-neutral btn--sm">
           <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
@@ -96,28 +101,16 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
         }
 
         <!-- Action bar -->
-        @if (canReviewEvidence() || (canUpdateEvidence() && evidence()!.statusCode === 'OBSERVED')) {
+        @if (canUpdateEvidence() && evidence()!.statusCode === 'OBSERVED') {
         <div class="action-bar">
           <span class="action-bar__label">Acciones disponibles:</span>
           <div class="action-bar__buttons">
-            @if (canReviewEvidence()) {
-            <button type="button" class="btn btn--outline" (click)="openReviewModal()">
-              <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M4.7 10.8h10.6v-1.6H4.7v1.6Zm0-4h10.6V5.2H4.7v1.6Zm0 8h7.2v-1.6H4.7v1.6Z"/>
-              </svg>
-              Registrar revisión
-            </button>
-            }
-            @if (evidence()!.statusCode === 'OBSERVED') {
-              @if (canUpdateEvidence()) {
-              <button type="button" class="btn btn--primary" (click)="openSubsanationModal()">
+            <button type="button" class="btn btn--primary" (click)="openSubsanationModal()">
                 <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
                   <path d="M4 14.5V16h1.5l7.7-7.7-1.5-1.5L4 14.5Zm10.9-7.8a1.1 1.1 0 0 0 0-1.6l-1-1a1.1 1.1 0 0 0-1.6 0l-.8.8L14 7.5l.9-.8Z"/>
                 </svg>
                 Registrar subsanación
               </button>
-              }
-            }
           </div>
         </div>
         }
@@ -195,12 +188,18 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                 <div class="tracking-summary__last">
                   <span class="tracking-summary__label">Última revisión:</span>
                   <span class="status-badge status-badge--sm"
-                        [class.status-badge--approved]="evidence()!.reviews[0].statusName === 'APROBADA'"
-                        [class.status-badge--observed]="evidence()!.reviews[0].statusName !== 'APROBADA'">
+                        [class.status-badge--approved]="evidence()!.reviews[0].statusCode === 'APPROVED'"
+                        [class.status-badge--observed]="evidence()!.reviews[0].statusCode !== 'APPROVED'">
                     <span class="status-badge__dot"></span>
                     {{ evidence()!.reviews[0].statusName }}
                   </span>
                 </div>
+                @if (reviewQualificationDisplay(evidence()!.reviews[0]); as ql) {
+                  <div class="tracking-summary__qual">
+                    <span class="tracking-summary__label">Calificación:</span>
+                    <span class="tracking-summary__qual-text">{{ ql }}</span>
+                  </div>
+                }
               }
             </div>
 
@@ -218,13 +217,16 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                   <div class="review-preview">
                     <div class="review-preview__header">
                       <span class="status-badge status-badge--sm"
-                            [class.status-badge--approved]="review.statusName === 'APROBADA'"
-                            [class.status-badge--observed]="review.statusName !== 'APROBADA'">
+                            [class.status-badge--approved]="review.statusCode === 'APPROVED'"
+                            [class.status-badge--observed]="review.statusCode !== 'APPROVED'">
                         <span class="status-badge__dot"></span>
                         {{ review.statusName }}
                       </span>
                       <span class="review-preview__date">{{ review.reviewedAt }}</span>
                     </div>
+                    @if (reviewQualificationDisplay(review); as ql) {
+                      <p class="review-preview__qual">{{ ql }}</p>
+                    }
                     <p class="review-preview__comment">{{ review.comment || 'Sin comentario registrado.' }}</p>
                   </div>
                 }
@@ -239,58 +241,6 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
             }
           </article>
         </div>
-      }
-
-      <!-- Modal: Registrar revisión -->
-      @if (reviewModalOpen()) {
-        <div class="modal-backdrop" (click)="closeReviewModal()"></div>
-        <section class="modal" role="dialog" aria-modal="true" aria-label="Registrar revisión">
-          <div class="modal__header">
-            <div>
-              <p class="modal__eyebrow">Evidencias</p>
-              <h2>Registrar revisión</h2>
-              <p class="modal__subtitle">Defina el resultado de la revisión para esta evidencia.</p>
-            </div>
-            <button type="button" class="modal__close" (click)="closeReviewModal()" aria-label="Cerrar modal">
-              <svg viewBox="0 0 20 20"><path d="M14.3 5.7l-1-1L10 8l-3.3-3.3-1 1L9 9l-3.3 3.3 1 1L10 10l3.3 3.3 1-1L11 9l3.3-3.3Z"/></svg>
-            </button>
-          </div>
-
-          <form [formGroup]="reviewForm" (ngSubmit)="submitReview()" class="form-grid">
-            <label class="field">
-              <span class="field__label">Decisión <span class="field__required">*</span></span>
-              <select formControlName="decisionCode">
-                <option value="APPROVED">Aprobar</option>
-                <option value="OBSERVED">Observar</option>
-              </select>
-            </label>
-
-            <label class="field field--full">
-              <span class="field__label">Comentario</span>
-              <textarea rows="4" formControlName="comment" placeholder="Comentario de revisión"></textarea>
-            </label>
-
-            @if (reviewForm.get('decisionCode')?.value === 'OBSERVED') {
-              <label class="field field--full">
-                <span class="field__label">Acción correctiva <span class="field__required">*</span></span>
-                <textarea rows="3" formControlName="correctiveActionDetail" placeholder="Acción requerida para subsanar"></textarea>
-              </label>
-            }
-
-            <div class="form-actions">
-              <button type="button" class="btn btn--ghost" (click)="closeReviewModal()">Cancelar</button>
-              <button type="submit" class="btn btn--primary" [disabled]="savingReview()">
-                @if (savingReview()) {
-                  <span class="loading-spinner loading-spinner--sm"></span>
-                }
-                <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
-                  <path d="M16.7 5.3 8.5 13.6 4.7 9.8l1.1-1.1 2.7 2.7 7.1-7.2 1.1 1.1Z"/>
-                </svg>
-                Registrar revisión
-                </button>
-            </div>
-          </form>
-        </section>
       }
 
       <!-- Modal: Registrar subsanación -->
@@ -362,6 +312,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                   <tr>
                     <th>#</th>
                     <th>Estado</th>
+                    <th>Calificación</th>
                     <th>Fecha</th>
                     <th>Comentario</th>
                     <th>Acción correctiva</th>
@@ -373,12 +324,13 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                       <td class="tracking-table__num">{{ (trackingPage() - 1) * 4 + i + 1 }}</td>
                       <td>
                         <span class="status-badge status-badge--sm"
-                              [class.status-badge--approved]="review.statusName === 'APROBADA'"
-                              [class.status-badge--observed]="review.statusName !== 'APROBADA'">
+                              [class.status-badge--approved]="review.statusCode === 'APPROVED'"
+                              [class.status-badge--observed]="review.statusCode !== 'APPROVED'">
                           <span class="status-badge__dot"></span>
                           {{ review.statusName }}
                         </span>
                       </td>
+                      <td>{{ reviewQualificationDisplay(review) ?? '—' }}</td>
                       <td>{{ review.reviewedAt }}</td>
                       <td>{{ review.comment || 'Sin comentario registrado.' }}</td>
                       <td>{{ review.correctiveActionDetail || 'Sin acción correctiva' }}</td>
@@ -395,12 +347,16 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                     <span>Estado</span>
                     <strong>
                       <span class="status-badge status-badge--sm"
-                            [class.status-badge--approved]="review.statusName === 'APROBADA'"
-                            [class.status-badge--observed]="review.statusName !== 'APROBADA'">
+                            [class.status-badge--approved]="review.statusCode === 'APPROVED'"
+                            [class.status-badge--observed]="review.statusCode !== 'APPROVED'">
                         <span class="status-badge__dot"></span>
                         {{ review.statusName }}
                       </span>
                     </strong>
+                  </div>
+                  <div class="tracking-card__row">
+                    <span>Calificación</span>
+                    <strong>{{ reviewQualificationDisplay(review) ?? '—' }}</strong>
                   </div>
                   <div class="tracking-card__row">
                     <span>Fecha</span>
@@ -439,11 +395,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                 <path d="M10 2.5a7.5 7.5 0 1 0 7.5 7.5A7.5 7.5 0 0 0 10 2.5Zm.8 7.8V6.2H9.2v4.8l3.2 1.9.8-1.3-2.4-1.3Z"/>
               </svg>
               <p>Aún no hay revisiones registradas para esta evidencia.</p>
-              @if (canReviewEvidence()) {
-                <button type="button" class="btn btn--outline btn--sm" (click)="closeTrackingModal(); openReviewModal()">
-                Registrar primera revisión
-              </button>
-              }
+              <p class="empty-state__hint">Para calificar, use el botón <strong>Calificar</strong> en el listado de evidencias de la meta.</p>
             </div>
           }
         </section>
@@ -608,17 +560,21 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .tracking-summary {
       display:flex; align-items:center; justify-content:space-between; gap:12px;
       padding:14px 18px; border-bottom:1px solid #f1f3f5;
+      flex-wrap:wrap;
     }
     .tracking-summary__stat { display:flex; align-items:baseline; gap:6px; }
     .tracking-summary__number { font-size:1.4rem; font-weight:800; color:#1a1a2e; line-height:1; }
     .tracking-summary__text { font-size:0.78rem; color:#667085; font-weight:500; }
     .tracking-summary__last { display:flex; align-items:center; gap:8px; }
     .tracking-summary__label { font-size:0.74rem; color:#8b95a5; font-weight:500; }
+    .tracking-summary__qual { display:flex; flex-direction:column; align-items:flex-end; gap:2px; text-align:right; }
+    .tracking-summary__qual-text { font-size:0.78rem; font-weight:600; color:#344054; max-width:260px; line-height:1.35; }
 
     /* ── Review preview list ── */
     .review-preview-list { padding:0; }
     .review-preview { padding:12px 18px; border-top:1px solid #f5f6f8; }
     .review-preview__header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
+    .review-preview__qual { margin:0 0 6px; font-size:0.76rem; font-weight:600; color:#1a1a2e; line-height:1.35; overflow-wrap:anywhere; }
     .review-preview__date { font-size:0.72rem; color:#8b95a5; }
     .review-preview__comment { margin:0; font-size:0.78rem; color:#475467; line-height:1.45; overflow-wrap:anywhere; }
 
@@ -629,6 +585,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .empty-state--lg { padding:40px 18px; }
     .empty-state__icon { width:28px; height:28px; fill:#c4ccd6; }
     .empty-state p { margin:0; color:#8b95a5; font-size:0.82rem; }
+    .empty-state__hint { margin:10px 0 0; font-size:0.78rem; color:#667085; line-height:1.45; max-width:400px; text-align:center; }
 
     /* ── Form styles ── */
     .form-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; padding:4px 0 0; min-width:0; }
@@ -670,7 +627,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
     /* ── Tracking table ── */
     .tracking-table { display:block; width:100%; overflow-x:auto; border:1px solid #e5e7eb; border-radius:10px; }
-    .tracking-table table { width:100%; min-width:760px; border-collapse:collapse; }
+    .tracking-table table { width:100%; min-width:860px; border-collapse:collapse; }
     .tracking-table th, .tracking-table td {
       padding:11px 14px; text-align:left; border-bottom:1px solid #f1f3f5;
       vertical-align:top; font-size:0.82rem; color:#344054; line-height:1.45;
@@ -739,25 +696,14 @@ export class EvidenceDetailComponent {
 
   readonly evidence = signal<EvidenceDetail | null>(null);
   readonly loading = signal(true);
-  readonly savingReview = signal(false);
   readonly savingUpdate = signal(false);
-  readonly reviewModalOpen = signal(false);
   readonly subsanationModalOpen = signal(false);
   readonly trackingModalOpen = signal(false);
   readonly trackingPage = signal(1);
   readonly errorMessage = signal('');
-  readonly canReviewEvidence = computed(() =>
-    this.authService.featureAccess()?.canReviewEvidences ?? false
-  );
   readonly canUpdateEvidence = computed(() =>
     this.authService.featureAccess()?.canManageEvidences ?? false
   );
-
-  readonly reviewForm = this.fb.group({
-    decisionCode: ['APPROVED', [Validators.required]],
-    comment: [''],
-    correctiveActionDetail: ['']
-  });
 
   readonly updateForm = this.fb.group({
     title: ['', [Validators.required]],
@@ -770,17 +716,6 @@ export class EvidenceDetailComponent {
   constructor() {
     this.evidenceId = Number(this.route.snapshot.paramMap.get('id') || 0);
     this.loadEvidence();
-  }
-
-  openReviewModal(): void {
-    if (!this.canReviewEvidence()) {
-      return;
-    }
-    this.reviewModalOpen.set(true);
-  }
-
-  closeReviewModal(): void {
-    this.reviewModalOpen.set(false);
   }
 
   openSubsanationModal(): void {
@@ -829,39 +764,10 @@ export class EvidenceDetailComponent {
     return goalId ? ['/dashboard/metas', String(goalId), 'evidencias'] : ['/dashboard/goals'];
   }
 
-  submitReview(): void {
-    if (!this.canReviewEvidence()) {
-      this.errorMessage.set('No cuenta con permisos para revisar evidencias.');
-      return;
-    }
-    if (this.reviewForm.invalid) {
-      this.reviewForm.markAllAsTouched();
-      this.errorMessage.set('Complete la informacion minima de revision.');
-      return;
-    }
-
-    const raw = this.reviewForm.getRawValue();
-    const payload: EvidenceReviewRequest = {
-      decisionCode: raw.decisionCode ?? 'APPROVED',
-      comment: (raw.comment ?? '').trim() || null,
-      correctiveActionDetail: (raw.correctiveActionDetail ?? '').trim() || null
-    };
-
-    this.savingReview.set(true);
-    this.errorMessage.set('');
-    this.evidencesService.reviewEvidence(this.evidenceId, payload).subscribe({
-      next: (evidence) => {
-        this.evidence.set(evidence);
-        this.patchUpdateForm(evidence);
-        this.reviewForm.reset({ decisionCode: 'APPROVED', comment: '', correctiveActionDetail: '' });
-        this.savingReview.set(false);
-        this.closeReviewModal();
-        this.toastService.success('Revision exitosa', 'La revision de la evidencia fue registrada correctamente.');
-      },
-      error: (error: Error) => {
-        this.errorMessage.set(error.message);
-        this.savingReview.set(false);
-      }
+  reviewQualificationDisplay(review: EvidenceReview): string | null {
+    return resolveQualificationHistoryLabel({
+      qualificationName: review.qualificationName,
+      qualificationCode: review.qualificationCode
     });
   }
 
@@ -877,9 +783,12 @@ export class EvidenceDetailComponent {
     }
 
     const raw = this.updateForm.getRawValue();
+    const currentEvidence = this.evidence();
     const payload: EvidenceUpsertRequest = {
       title: (raw.title ?? '').trim(),
       detail: (raw.detail ?? '').trim() || null,
+      evidenceTypeCode: currentEvidence?.evidenceTypeCode ?? 'AVANCE',
+      expectedFormatCode: currentEvidence?.expectedFormatCode ?? 'OTRO',
       expectedDate: raw.expectedDate || null
     };
 

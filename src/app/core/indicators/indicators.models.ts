@@ -13,7 +13,6 @@ export interface Indicator {
 }
 
 export interface IndicatorUpsertRequest {
-  code: string;
   name: string;
   description: string | null;
   valueTypeId: number;

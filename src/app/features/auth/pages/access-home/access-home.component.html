@@ -4,26 +4,7 @@
       <section class="dashboard__hero">
         <p class="dashboard__eyebrow">Gestion del rendimiento</p>
         <h1 class="dashboard__title">Panel de trabajo</h1>
-        <p class="dashboard__subtitle">
-          Acceda solo a los modulos habilitados segun su rol tecnico, actor funcional y alcance operativo.
-        </p>
-
-        <div class="context-bar">
-          <div class="context-bar__item">
-            <span class="context-bar__label">Ciclo</span>
-            <span class="context-bar__value">{{ profile()!.context.cycleName || 'Sin ciclo activo' }}</span>
-          </div>
-          <div class="context-bar__divider"></div>
-          <div class="context-bar__item">
-            <span class="context-bar__label">Actor</span>
-            <span class="context-bar__value">{{ profile()!.context.functionalActor }}</span>
-          </div>
-          <div class="context-bar__divider"></div>
-          <div class="context-bar__item">
-            <span class="context-bar__label">Unidad</span>
-            <span class="context-bar__value">{{ profile()!.context.orgUnitName || 'Sin unidad vinculada' }}</span>
-          </div>
-        </div>
+       
       </section>
 
       @for (notice of notices(); track notice) {
@@ -54,18 +35,36 @@
           </a>
         }
 
-        @if (profile()!.featureAccess.canViewCatalogs) {
-          <a routerLink="/dashboard/admin/catalogs" class="module-card">
+        @if (profile()!.featureAccess.canManageUsers) {
+          <a routerLink="/dashboard/admin/users" class="module-card">
             <div class="module-card__header">
               <div class="module-card__icon module-card__icon--purple">
                 <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <path d="M3 3h14v2H3V3Zm0 4h14v2H3V7Zm0 4h10v2H3v-2Zm0 4h7v2H3v-2Z"/>
+                  <path d="M10 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-5.6 8c0-3.1 2.5-5.6 5.6-5.6s5.6 2.5 5.6 5.6H4.4Zm10.2-8.8 1-1 1 1 1.4-1.4 1 1-1.4 1.4 1.4 1.4-1 1-1.4-1.4-1 1-1-1 1-1-1-1Z"/>
                 </svg>
               </div>
-              <span class="module-card__eyebrow module-card__eyebrow--purple">Administracion GRD base</span>
+              <span class="module-card__eyebrow module-card__eyebrow--purple">Administracion del sistema</span>
             </div>
-            <strong class="module-card__title">Catalogos minimos</strong>
-            <p class="module-card__desc">Tipos de valor, formulas y segmentos vigentes para el ciclo operativo.</p>
+            <strong class="module-card__title">Gestion de usuarios</strong>
+            <p class="module-card__desc">Alta, datos basicos, estado y roles tecnicos para usuarios del sistema.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canManageUsers) {
+          <a routerLink="/dashboard/admin/participacion-gdr" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--purple">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M6 4a2 2 0 1 1 0-0.1V4Zm8 0a2 2 0 1 1 0-0.1V4ZM4 16a4 4 0 1 1 8 0H4Zm12-2H8l4-2 4 2Zm-4-3a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--purple">Administracion del sistema</span>
+            </div>
+            <strong class="module-card__title">Participacion GDR por ciclo</strong>
+            <p class="module-card__desc">Define quien evalua a quien en cada ciclo. El actor funcional se calcula automaticamente.</p>
             <span class="module-card__arrow">
               <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
             </span>
@@ -126,7 +125,7 @@
           </a>
         }
 
-        @if (profile()!.featureAccess.canViewDocuments) {
+        @if (profile()!.featureAccess.canViewDocuments && !hideLote4DashboardCards()) {
           <a
             routerLink="/dashboard/documentos"
             [queryParams]="documentsQueryParams()"
@@ -148,7 +147,7 @@
           </a>
         }
 
-        @if (profile()!.featureAccess.canViewImprovements) {
+        @if (profile()!.featureAccess.canViewImprovements && !hideLote4DashboardCards()) {
           <a
             routerLink="/dashboard/oportunidades-mejora"
             [queryParams]="improvementsQueryParams()"
@@ -218,6 +217,64 @@
             </div>
             <strong class="module-card__title">Consentimientos</strong>
             <p class="module-card__desc">Aceptaciones self-service y trazabilidad minima del propio usuario dentro del sistema.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canViewOrhReception) {
+          <a routerLink="/dashboard/orh/recepcion" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--blue">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 3h12v2H4V3Zm0 4h12v2H4V7Zm0 4h8v2H4v-2Zm10.8.2 1.1 1.1-3.6 3.6-2-2 1.1-1.1.9.9 2.5-2.5Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--blue">ORH institucional</span>
+            </div>
+            <strong class="module-card__title">Recepcion ORH</strong>
+            <p class="module-card__desc">Consulta inicial de solicitudes y envios recibidos para revision institucional.</p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canManageDistinguidoRequisites) {
+          <a routerLink="/dashboard/orh/distinguidos-candidatos" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--teal">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 17h12v-1.8H4V17Zm0-4h8v-1.7H4v1.7Zm0-6h12V5H4v4.2Zm0-6h12V3H4v1.7Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--teal">ORH institucional</span>
+            </div>
+            <strong class="module-card__title">Rendimiento distinguido — candidatos</strong>
+            <p class="module-card__desc">
+              Lista institucional, calificación notificada y confirmación marcador requisitos 8.2 (directiva aplicable por ORH).
+            </p>
+            <span class="module-card__arrow">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </span>
+          </a>
+        }
+
+        @if (profile()!.featureAccess.canAssignDistinguido) {
+          <a routerLink="/dashboard/junta/distinguidos-asignacion" class="module-card">
+            <div class="module-card__header">
+              <div class="module-card__icon module-card__icon--brand">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm3.7 6.3-4.2 4.2a.8.8 0 0 1-1.1 0L6.3 10.4l1.1-1.1 1.5 1.5 3.7-3.7 1.1 1.2Z"/>
+                </svg>
+              </div>
+              <span class="module-card__eyebrow module-card__eyebrow--brand">Junta</span>
+            </div>
+            <strong class="module-card__title">Rendimiento distinguido</strong>
+            <p class="module-card__desc">
+              Decide la etiqueta Rendimiento distinguido dentro del cupo institucional, según información validada por ORH.
+            </p>
             <span class="module-card__arrow">
               <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
             </span>

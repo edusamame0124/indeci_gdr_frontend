@@ -10,5 +10,8 @@ export interface HrAssignmentSummary {
   orgUnitId: number;
   orgUnitCode: string;
   orgUnitName: string;
+  segmentId: number | null;
+  segmentCode: string | null;
+  segmentName: string | null;
   status: string;
 }

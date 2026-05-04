@@ -107,9 +107,22 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
               <small>#{{ result()?.resultId ?? 'Sin consolidar' }}</small>
               <span class="result-box__label">Puntaje actual</span>
               <strong>{{ result()?.consolidatedScore ?? evaluation()!.consolidatedScore ?? 'Pendiente' }}</strong>
-              <p>
-                La logica del lote actual es minima, encapsulada y preparada para ajustes posteriores de formula y
-                redondeo.
+              <span class="result-box__label">Calificación SERVIR</span>
+              @if (qualitativeRatingCode(); as code) {
+                <span
+                  class="rating-badge"
+                  [class.rating-badge--good]="code === 'BUEN_RENDIMIENTO' || code === 'DISTINGUIDO'"
+                  [class.rating-badge--warn]="code === 'SUJETO_OBSERVACION'"
+                  [class.rating-badge--bad]="code === 'DESAPROBADO'"
+                  [class.rating-badge--neutral]="code === 'NO_CALIFICABLE'"
+                >{{ qualitativeRatingLabel() }}</span>
+              } @else {
+                <span class="rating-badge rating-badge--pending">Pendiente</span>
+              }
+              <span class="result-box__label">Segmento del evaluado</span>
+              <small>{{ segmentName() ?? 'Sin segmento' }}</small>
+              <p class="rating-hint">
+                Umbral SERVIR: ≥ 70 para segmento Directivo, ≥ 60 para los demás.
               </p>
             </div>
 
@@ -182,22 +195,32 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                         <span>Peso</span>
                         <strong>{{ detail.weight }}%</strong>
                       </div>
-                      <div>
-                        <span>Puntaje actual</span>
-                        <strong>{{ detail.scoreValue ?? 'Pendiente' }}</strong>
-                      </div>
                     </div>
 
                     <div class="score-card__form">
-                      <label class="field">
+                      <label class="field field--readonly">
                         <span class="field__label">Valor alcanzado</span>
                         <input
                           type="number"
-                          min="0.0001"
                           step="0.0001"
                           formControlName="achievedValue"
-                          [readonly]="!canManageFinalEvaluation()"
+                          readonly
+                          aria-readonly="true"
+                          tabindex="-1"
                         />
+                        <small>Se trae de la calificacion previa de la meta.</small>
+                      </label>
+
+                      <label class="field field--readonly">
+                        <span class="field__label">Puntaje</span>
+                        <input
+                          type="text"
+                          [value]="detail.scoreValue ?? 'Pendiente'"
+                          readonly
+                          aria-readonly="true"
+                          tabindex="-1"
+                        />
+                        <small>Calculado por el sistema al calificar la meta.</small>
                       </label>
 
                       <label class="field field--full">
@@ -287,6 +310,14 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .status-badge__dot { width:7px; height:7px; border-radius:50%; background:currentColor; flex:0 0 auto; }
     .status-badge--muted { background:#f8fafc; color:#667085; }
 
+    .rating-badge { display:inline-flex; align-items:center; padding:4px 12px; border-radius:999px; font-size:0.78rem; font-weight:700; line-height:1.2; background:#f0f1f3; color:#475467; width:fit-content; }
+    .rating-badge--good { background:#dcfce7; color:#15803d; }
+    .rating-badge--warn { background:#fef3c7; color:#a16207; }
+    .rating-badge--bad { background:#fee2e2; color:#b91c1c; }
+    .rating-badge--neutral { background:#e0e7ff; color:#4338ca; }
+    .rating-badge--pending { background:#f1f5f9; color:#94a3b8; font-style:italic; }
+    .rating-hint { margin:8px 0 0; font-size:0.72rem; color:#64748b; line-height:1.45; }
+
     /* ── Loading ── */
     .loading-state { display:flex; align-items:center; justify-content:center; gap:10px; padding:40px 16px; color:#667085; font-size:0.84rem; }
     .loading-spinner { width:18px; height:18px; border:2px solid #e5e7eb; border-top-color:#7f1714; border-radius:50%; animation:spin 0.7s linear infinite; }
@@ -334,11 +365,15 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .score-card__head { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
     .score-card__eyebrow { display:block; margin-bottom:4px; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color:#8b95a5; font-weight:700; }
     .score-card__head strong { color:#1a1a2e; font-size:0.9rem; line-height:1.45; }
-    .score-card__meta { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; }
+    .score-card__meta { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
     .score-card__meta div { border-radius:10px; background:#f8fafc; padding:10px 12px; display:grid; gap:3px; }
     .score-card__meta span { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color:#8b95a5; font-weight:700; }
     .score-card__meta strong { color:#1a1a2e; font-size:0.82rem; line-height:1.45; }
-    .score-card__form { display:grid; grid-template-columns:220px minmax(0, 1fr); gap:12px; }
+    .score-card__form { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+    .score-card__form .field--full { grid-column:1 / -1; }
+    .field--readonly input { background:#f1f3f5; color:#475467; cursor:not-allowed; border-color:#e5e7eb; font-weight:600; }
+    .field--readonly input:focus { outline:none; box-shadow:none; border-color:#e5e7eb; }
+    .field--readonly small { color:#94a3b8; font-size:0.7rem; line-height:1.35; }
 
     /* ── Responsive ── */
     @media (max-width: 980px) {
@@ -380,6 +415,16 @@ export class FinalEvaluationDetailComponent {
   );
   readonly canViewImprovements = computed(
     () => this.authService.featureAccess()?.canViewImprovements ?? false
+  );
+
+  readonly qualitativeRatingCode = computed(
+    () => this.result()?.qualitativeRatingCode ?? this.evaluation()?.qualitativeRatingCode ?? null
+  );
+  readonly qualitativeRatingLabel = computed(
+    () => this.result()?.qualitativeRatingLabel ?? this.evaluation()?.qualitativeRatingLabel ?? null
+  );
+  readonly segmentName = computed(
+    () => this.result()?.segmentName ?? this.evaluation()?.segmentName ?? null
   );
 
   readonly form = this.fb.group({

@@ -115,6 +115,16 @@ export class AuthService {
         return access.canViewNotifications;
       case 'consents':
         return access.canViewConsents;
+      case 'orhReception':
+        return access.canViewOrhReception;
+      case 'orhDistinguidosCandidates':
+        return access.canViewDistinguidoCandidates && access.canManageDistinguidoRequisites;
+      case 'juntaDistinguidosAssign':
+        return access.canAssignDistinguido && access.canViewDistinguidoCandidates;
+      case 'userManagement':
+        return access.canManageUsers;
+      case 'assignmentManagement':
+        return access.canManageUsers;
       default:
         return false;
     }

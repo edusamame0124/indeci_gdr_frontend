@@ -33,22 +33,36 @@ export class AccessHomeComponent {
     }
     return messages;
   });
+  /**
+   * UI: el panel no muestra Lote 4 documental / mejora al actor funcional EVALUADOR puro
+   * (rutas y permisos backend no cambian).
+   */
+  readonly hideLote4DashboardCards = computed(
+    () => this.profile()?.context.functionalActor === 'EVALUADOR'
+  );
+
   readonly hasVisibleModules = computed(() => {
     const profile = this.profile();
     if (!profile) {
       return false;
     }
     const access = profile.featureAccess;
+    const hideLote4 = this.hideLote4DashboardCards();
+    const documentsVisible = access.canViewDocuments && !hideLote4;
+    const improvementsVisible = access.canViewImprovements && !hideLote4;
     return access.canViewAssignments
-      || access.canViewCatalogs
       || access.canViewIndicators
       || access.canViewGoals
       || access.canViewFinalEvaluations
-      || access.canViewDocuments
-      || access.canViewImprovements
+      || documentsVisible
+      || improvementsVisible
       || access.canViewReports
       || access.canViewNotifications
-      || access.canViewConsents;
+      || access.canViewConsents
+      || access.canViewOrhReception
+      || access.canManageUsers
+      || access.canManageDistinguidoRequisites
+      || access.canAssignDistinguido;
   });
 
   constructor() {
