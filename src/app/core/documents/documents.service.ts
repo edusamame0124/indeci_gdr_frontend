@@ -6,6 +6,8 @@ import { ApiResponse } from '../../shared/models/api-response.model';
 import {
   DocumentoFirmadoDetalle,
   DocumentoFirmadoResumen,
+  FORMATO_GDR_PDF_MIME,
+  FormatoGdrPdfDownload,
   InicioFirma,
   PlantillaDocumento,
   RegistrarRetornoFirmaPayload,
@@ -118,6 +120,71 @@ export class DocumentsService {
     return this.http.get(`${environment.apiBaseUrl}/documentos/plantillas/${templateId}/descarga`, {
       responseType: 'blob'
     });
+  }
+
+  /**
+   * Descarga el Formato GDR generado (.pdf) para el evaluado indicado.
+   * Usa la query `evaluatedId` alineada al backend y respeta nombre y MIME devueltos en cabeceras.
+   */
+  downloadFormatoGdrPdf(evaluatedId: number): Observable<FormatoGdrPdfDownload> {
+    const fallbackFileName = `formato_gdr_evaluado_${evaluatedId}.pdf`;
+    return this.http
+      .get(`${environment.apiBaseUrl}/documentos/formato-gdr/pdf`, {
+        params: { evaluatedId: String(evaluatedId) },
+        observe: 'response',
+        responseType: 'blob'
+      })
+      .pipe(
+        map((response) => {
+          const rawType = response.headers.get('Content-Type')?.split(';')[0]?.trim();
+          const mimeType =
+            rawType && rawType.length > 0 && rawType !== 'application/octet-stream'
+              ? rawType
+              : FORMATO_GDR_PDF_MIME;
+          const fromDisposition = this.parseContentDispositionFileName(
+            response.headers.get('Content-Disposition')
+          );
+          const fileName = fromDisposition ?? fallbackFileName;
+          const body = response.body;
+          const blob =
+            body != null
+              ? body.type && body.type.length > 0
+                ? body
+                : new Blob([body], { type: mimeType })
+              : new Blob([], { type: mimeType });
+          return { blob, mimeType, fileName };
+        })
+      );
+  }
+
+  private parseContentDispositionFileName(header: string | null): string | null {
+    if (!header) {
+      return null;
+    }
+    const segments = header.split(';').map((part) => part.trim());
+    for (const segment of segments) {
+      const star = /^filename\*=(?:UTF-8'')?(.+)$/i.exec(segment);
+      if (star) {
+        let value = star[1].trim().replace(/^"(.*)"$/, '$1');
+        try {
+          value = decodeURIComponent(value);
+        } catch {
+          /* usar literal */
+        }
+        return value;
+      }
+    }
+    for (const segment of segments) {
+      const plain = /^filename=(.+)$/i.exec(segment);
+      if (plain) {
+        let value = plain[1].trim();
+        if (value.startsWith('"') && value.endsWith('"')) {
+          value = value.slice(1, -1);
+        }
+        return value;
+      }
+    }
+    return null;
   }
 
   getSignedDocumentFile(documentId: number, download = false): Observable<Blob> {

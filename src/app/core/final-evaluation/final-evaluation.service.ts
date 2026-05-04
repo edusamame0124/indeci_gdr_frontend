@@ -7,6 +7,7 @@ import {
   FinalEvaluationDetail,
   FinalEvaluationSummary,
   FinalEvaluationUpsertRequest,
+  QualificationMailNotifyResponse,
   ResultSummary
 } from './final-evaluation.models';
 
@@ -35,6 +36,15 @@ export class FinalEvaluationService {
   updateFinalEvaluation(evaluationId: number, payload: FinalEvaluationUpsertRequest): Observable<FinalEvaluationDetail> {
     return this.http
       .put<ApiResponse<FinalEvaluationDetail>>(`${environment.apiBaseUrl}/evaluacion-final/${evaluationId}`, payload)
+      .pipe(map((response) => response.data));
+  }
+
+  notifyQualificationByEmail(evaluationId: number): Observable<QualificationMailNotifyResponse> {
+    return this.http
+      .post<ApiResponse<QualificationMailNotifyResponse>>(
+        `${environment.apiBaseUrl}/evaluacion-final/${evaluationId}/notificar`,
+        {}
+      )
       .pipe(map((response) => response.data));
   }
 

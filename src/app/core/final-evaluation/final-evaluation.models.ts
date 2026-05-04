@@ -80,3 +80,9 @@ export interface FinalEvaluationUpsertRequest {
     detailComment: string | null;
   }[];
 }
+
+/** Respuesta de POST /evaluacion-final/{id}/notificar (alineado al backend). */
+export interface QualificationMailNotifyResponse {
+  estado: string;
+  codigoPlantilla: string;
+}

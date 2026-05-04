@@ -1,3 +1,13 @@
+/** MIME de PDF generado para Formato GDR. */
+export const FORMATO_GDR_PDF_MIME = 'application/pdf' as const;
+
+/** Respuesta de GET /documentos/formato-gdr/pdf?evaluatedId=… (cuerpo binario + cabeceras). */
+export interface FormatoGdrPdfDownload {
+  blob: Blob;
+  mimeType: string;
+  fileName: string;
+}
+
 export interface TipoDocumento {
   idTipoDocumento: number;
   codigoTipoDocumento: string;

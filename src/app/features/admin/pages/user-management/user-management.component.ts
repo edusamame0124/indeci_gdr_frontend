@@ -341,15 +341,18 @@ type StatusTarget = { user: UserListItemResponse; nextStatus: 'ACTIVE' | 'INACTI
                 }
 
                 <label class="form-field" for="user-display-name">
-                  <span>Nombre visible</span>
+                  <span>Nombres y Apellidos</span>
                   <input
                     id="user-display-name"
                     type="text"
                     maxlength="150"
+                    autocomplete="name"
+                    spellcheck="false"
                     [value]="displayName()"
                     [disabled]="submittingUser()"
-                    (input)="displayName.set(eventValue($event))"
+                    (input)="onDisplayNameInput($event)"
                   />
+                  <small class="form-field__hint">Máximo 150 caracteres. Se convierte automáticamente a mayúsculas.</small>
                 </label>
 
                 <label class="form-field" for="user-email">
@@ -1599,7 +1602,7 @@ export class UserManagementComponent {
           this.editingUserId.set(detail.id);
           this.username.set(detail.username);
           this.email.set(detail.email);
-          this.displayName.set(detail.displayName);
+          this.displayName.set(this.normalizePersonDisplayName(detail.displayName));
           this.initialPassword.set('');
           this.documentNumber.set('');
           this.orgUnitIdText.set('');
@@ -1667,7 +1670,7 @@ export class UserManagementComponent {
       const payload: CreateUserRequest = {
         username: this.username().trim(),
         email: this.email().trim(),
-        displayName: this.displayName().trim(),
+        displayName: this.normalizePersonDisplayName(this.displayName()),
         initialPassword: this.initialPassword().trim(),
         documentNumber,
         orgUnitId,
@@ -1698,7 +1701,7 @@ export class UserManagementComponent {
 
     const payload: UpdateUserRequest = {
       email: this.email().trim(),
-      displayName: this.displayName().trim()
+      displayName: this.normalizePersonDisplayName(this.displayName())
     };
 
     this.usersService
@@ -1828,6 +1831,19 @@ export class UserManagementComponent {
 
   protected eventValue(event: Event): string {
     return (event.target as HTMLInputElement).value;
+  }
+
+  /**
+   * DISPLAY_NAME institucional en mayúsculas; {@code maxlength} en UI = 150 (SEC_USER.DISPLAY_NAME, validators backend).
+   */
+  protected normalizePersonDisplayName(raw: string | null | undefined): string {
+    const upper = (raw ?? '').toLocaleUpperCase('es-PE').trim();
+    return upper.length > 150 ? upper.slice(0, 150) : upper;
+  }
+
+  protected onDisplayNameInput(event: Event): void {
+    const capped = this.eventValue(event).toLocaleUpperCase('es-PE').slice(0, 150);
+    this.displayName.set(capped);
   }
 
   private loadInitialData(): void {

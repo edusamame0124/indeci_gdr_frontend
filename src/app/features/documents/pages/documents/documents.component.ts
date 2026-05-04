@@ -7,6 +7,7 @@ import { FinalEvaluationSummary } from '../../../../core/final-evaluation/final-
 import { FinalEvaluationService } from '../../../../core/final-evaluation/final-evaluation.service';
 import {
   DocumentoFirmadoResumen,
+  FormatoGdrPdfDownload,
   InicioFirma,
   PlantillaDocumento,
   RegistrarRetornoFirmaPayload,
@@ -33,13 +34,13 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
           <a [routerLink]="'/dashboard/evaluacion-final/' + evaluatedId()" class="breadcrumb__link">Detalle</a>
           <span class="breadcrumb__sep" aria-hidden="true">/</span>
         }
-        <span class="breadcrumb__current">Documentos</span>
+        <span class="breadcrumb__current">Formatos</span>
       </nav>
 
       <!-- Page header -->
       <div class="page__header">
         <div class="page__header-left">
-          <h1>Documentos firmados</h1>
+          <h1>Documentos firmados (Formatos)</h1>
           <p class="page__subtitle">
             Flujo principal con preparacion documental, inicio de firma con Firma Peru y consulta posterior del documento firmado.
           </p>
@@ -342,7 +343,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
           }
         </article>
 
-        <article class="panel">
+        <article class="panel panel--formats-catalog">
           <header class="panel__header">
             <div class="panel__header-icon">
               <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -350,44 +351,53 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
               </svg>
             </div>
             <div>
-              <h2 class="panel__title">Plantillas disponibles</h2>
+              <h2 class="panel__title">Formatos disponibles</h2>
               <p class="panel__desc">Catalogo documental minimo para descarga controlada.</p>
             </div>
           </header>
 
           @if (loadingStatic()) {
-            <div class="loading-state">
+            <div class="loading-state loading-state--panel-tight">
               <div class="loading-spinner"></div>
               <span>Cargando catalogo documental...</span>
             </div>
-          } @else if (templates().length) {
-            <div class="record-list">
-              @for (template of templates(); track template.idPlantilla) {
-                <article class="record-card">
-                  <div class="record-card__head">
-                    <div>
-                      <span class="record-card__eyebrow">{{ template.nombreTipoDocumento }}</span>
-                      <strong>{{ template.nombrePlantilla }}</strong>
-                    </div>
-                    <span class="status-badge">
+          } @else if (catalogDisplayedTemplates().length) {
+            <div class="record-list record-list--format-catalog">
+              @for (template of catalogDisplayedTemplates(); track template.idPlantilla) {
+                <article class="record-card record-card--format-gdr">
+                  <div class="record-card__format-head">
+                    <strong>Formato GDR</strong>
+                    <span class="status-badge status-badge--quiet">
                       <span class="status-badge__dot"></span>
-                      {{ template.mimeType }}
+                      PDF
                     </span>
                   </div>
-                  <p>{{ template.descripcion || 'Plantilla disponible para descarga institucional.' }}</p>
-                  <div class="record-card__meta">
-                    <span>Tipo: {{ template.nombreTipoDocumento }}</span>
-                    <span>{{ template.nombreOriginal }}</span>
-                    <span>{{ formatSize(template.tamanioBytes) }}</span>
+                  <p>
+                    Formato GDR automático acorde a los datos ingresados en el Sistema.
+                  </p>
+                  @if (!evaluatedId()) {
+                    <p class="hint-text">Seleccione un evaluado y pulse <strong>Usar evaluado</strong> para generar el PDF con datos.</p>
+                  }
+                  <div class="record-card__cta">
+                    <button
+                      type="button"
+                      class="btn btn--outline btn--compact"
+                      (click)="downloadFormatoGdrPdfFile()"
+                      [disabled]="downloadingFormatoGdr() || !evaluatedId() || !canPrepareDocuments()"
+                    >
+                      @if (downloadingFormatoGdr()) {
+                        <span class="loading-spinner loading-spinner--inline"></span>
+                        Generando…
+                      } @else {
+                        Descargar Formato GDR
+                      }
+                    </button>
                   </div>
-                  <button type="button" class="btn btn--outline btn--sm btn--full" (click)="downloadTemplate(template)">
-                    Descargar plantilla
-                  </button>
                 </article>
               }
             </div>
           } @else {
-            <div class="empty-state">
+            <div class="empty-state empty-state--panel-tight">
               <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.4L11.6 2H6Zm5 1.2L14.8 7H12a1 1 0 0 1-1-1V3.2ZM7 10h6v1.5H7V10Zm0 3h4v1.5H7V13Z"/>
               </svg>
@@ -584,6 +594,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     /* ── Loading ── */
     .loading-state { display:flex; align-items:center; justify-content:center; gap:10px; padding:40px 16px; color:#667085; font-size:0.84rem; }
     .loading-spinner { width:18px; height:18px; border:2px solid #e5e7eb; border-top-color:#7f1714; border-radius:50%; animation:spin 0.7s linear infinite; }
+    .loading-spinner--inline { width:13px; height:13px; border-width:2px; flex:0 0 auto; border-color:rgba(127,23,20,0.15); border-top-color:#7f1714; }
     .loading-spinner--sm { width:14px; height:14px; border-width:2px; border-color:rgba(255,255,255,0.3); border-top-color:#fff; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
@@ -593,7 +604,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .empty-state p { margin:0; color:#8b95a5; font-size:0.84rem; }
 
     /* ── Layout grid ── */
-    .layout-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; }
+    .layout-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; align-items:start; }
 
     /* ── Panel ── */
     .panel { border-radius:12px; background:#fff; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,0.04); padding:16px; display:grid; gap:14px; }
@@ -603,6 +614,63 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .panel__header-icon svg { width:16px; height:16px; fill:#7f1714; }
     .panel__title { margin:0; font-size:0.9rem; color:#1a1a2e; font-weight:700; line-height:1.3; }
     .panel__desc { margin:2px 0 0; color:#8b95a5; font-size:0.74rem; line-height:1.4; }
+
+    /* Catalog "Formatos disponibles": dense, corporate */
+    .panel--formats-catalog { gap:8px; padding:12px 12px 10px; align-self:start; }
+    .panel--formats-catalog .panel__header { gap:10px; }
+    .panel--formats-catalog .panel__header-icon { width:28px; height:28px; border-radius:6px; }
+    .panel--formats-catalog .panel__header-icon svg { width:14px; height:14px; }
+    .panel--formats-catalog .panel__title { font-size:0.86rem; letter-spacing:-0.01em; }
+    .panel--formats-catalog .panel__desc { font-size:0.71rem; margin-top:1px; line-height:1.35; }
+    .panel--formats-catalog .loading-state--panel-tight { padding:22px 12px; }
+    .panel--formats-catalog .empty-state--panel-tight { padding:22px 12px; gap:8px; }
+
+    .record-list--format-catalog { gap:8px; }
+
+    .record-card--format-gdr {
+      padding:9px 10px 8px;
+      gap:5px;
+      border-radius:8px;
+      border-color:#e8eaed;
+    }
+    .record-card--format-gdr .record-card__format-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .record-card--format-gdr .record-card__format-head strong {
+      font-size:0.82rem;
+      font-weight:600;
+      line-height:1.2;
+      color:#1a1a2e;
+    }
+    .record-card--format-gdr p { margin:0; font-size:0.74rem; line-height:1.38; color:#5c6670; }
+    .record-card--format-gdr .status-badge--quiet {
+      padding:2px 7px;
+      font-size:0.62rem;
+      font-weight:600;
+      background:#f1f3f6;
+      color:#556070;
+      border:1px solid #e5e9ef;
+      flex-shrink:0;
+    }
+    .record-card--format-gdr .status-badge--quiet .status-badge__dot { width:5px; height:5px; opacity:0.85; background:#556070; }
+    .record-card--format-gdr .record-card__cta { margin-top:1px; display:flex; justify-content:flex-start; }
+    .record-card--format-gdr .btn--compact {
+      min-height:28px;
+      padding:0 12px;
+      font-size:0.72rem;
+      font-weight:600;
+      border-radius:6px;
+    }
+    .record-card--format-gdr .hint-text {
+      margin:0;
+      font-size:0.7rem;
+      color:#8b95a5;
+      line-height:1.38;
+    }
 
     /* ── Selection block ── */
     .selection-block { display:grid; gap:10px; padding-bottom:2px; border-bottom:1px solid #f1f3f5; }
@@ -698,6 +766,7 @@ export class DocumentsComponent {
   readonly refreshingRequest = signal(false);
   readonly returning = signal(false);
   readonly returnModalOpen = signal(false);
+  readonly downloadingFormatoGdr = signal(false);
   readonly errorMessage = signal('');
   readonly selectedFileName = signal('');
   readonly returnFileName = signal('');
@@ -712,6 +781,10 @@ export class DocumentsComponent {
   );
   readonly canRegisterSignedDocuments = computed(
     () => this.authService.featureAccess()?.canRegisterSignedDocuments ?? false
+  );
+
+  readonly catalogDisplayedTemplates = computed(() =>
+    this.templates().filter((t) => t.codigoTipoDocumento === 'ACTA_RETROALIMENTACION')
   );
 
   readonly selectionForm = this.fb.group({
@@ -1064,7 +1137,26 @@ export class DocumentsComponent {
     return `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
-  downloadTemplate(template: PlantillaDocumento): void {
+  downloadFormatoGdrPdfFile(): void {
+    const evaluatedIdValue = this.evaluatedId();
+    if (!evaluatedIdValue || !this.canPrepareDocuments()) {
+      return;
+    }
+    this.downloadingFormatoGdr.set(true);
+    this.documentsService.downloadFormatoGdrPdf(evaluatedIdValue).subscribe({
+      next: (result: FormatoGdrPdfDownload) => {
+        this.downloadBlob(result.blob, result.fileName);
+        this.downloadingFormatoGdr.set(false);
+      },
+      error: (error: Error) => {
+        this.errorMessage.set(error.message || 'No se pudo generar el Formato GDR.');
+        this.downloadingFormatoGdr.set(false);
+      }
+    });
+  }
+
+  /** Descarga PDF desde plantilla catalogada (uso distinto del Formato GDR PDF generado). */
+  downloadTemplatePdf(template: PlantillaDocumento): void {
     this.documentsService.downloadTemplate(template.idPlantilla).subscribe({
       next: (blob) => {
         this.downloadBlob(blob, template.nombreOriginal);

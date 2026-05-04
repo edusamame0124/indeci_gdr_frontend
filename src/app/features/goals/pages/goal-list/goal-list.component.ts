@@ -331,7 +331,7 @@ function percentRangeValidator(): ValidatorFn {
                                     <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
                                       <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.4L11.6 2H6Zm5 1.2L14.8 7H12a1 1 0 0 1-1-1V3.2ZM7 10h6v1.5H7V10Zm0 3h4v1.5H7V13Z"/>
                                     </svg>
-                                    Documentos
+                                    Formatos
                                   </a>
                                 }
                                 @if (canViewImprovements()) {

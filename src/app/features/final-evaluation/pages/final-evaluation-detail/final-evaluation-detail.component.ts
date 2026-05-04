@@ -127,6 +127,31 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
             </div>
 
             <div class="result-actions">
+              @if (canNotifyQualificationByEmail() && evaluation()!.evaluationId) {
+                <div class="notify-mail-block">
+                  <button
+                    type="button"
+                    class="btn btn--outline btn--sm btn--full"
+                    [disabled]="notifying() || !qualitativeRatingCode()"
+                    (click)="notifyQualificationByEmail()"
+                    aria-label="Enviar notificación de calificación por correo institucional al evaluado"
+                  >
+                    @if (notifying()) {
+                      <span class="loading-spinner loading-spinner--outline"></span>
+                    } @else {
+                      <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="M2.5 5.8 10 10.9l7.5-5.1V15h-15V5.8Zm0-1.4c-.8 0-1.5.7-1.5 1.6v9c0 .9.7 1.6 1.5 1.6h15c.8 0 1.5-.7 1.5-1.6v-9c0-.9-.7-1.6-1.5-1.6h-15Zm14 2.4L10 11 3.5 6.8V14h13V6.8Z"/>
+                      </svg>
+                    }
+                    Notificar calificación por correo
+                  </button>
+                  @if (!qualitativeRatingCode()) {
+                    <p class="rating-hint notify-mail-block__hint">
+                      Registre primero la calificación cualitativa consolidada para poder enviar el correo al evaluado.
+                    </p>
+                  }
+                </div>
+              }
               @if (canViewDocuments()) {
                 <a
                   routerLink="/dashboard/documentos"
@@ -345,6 +370,9 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
     /* ── Result actions ── */
     .result-actions { display:grid; gap:8px; }
+    .notify-mail-block { display:grid; gap:6px; }
+    .notify-mail-block__hint { margin:0; }
+    .loading-spinner--outline { border-color:rgba(127,23,20,0.2); border-top-color:#7f1714; }
 
     /* ── Form ── */
     .form-grid { display:grid; gap:14px; min-width:0; }
@@ -406,6 +434,7 @@ export class FinalEvaluationDetailComponent {
   readonly result = signal<ResultSummary | null>(null);
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly notifying = signal(false);
   readonly errorMessage = signal('');
   readonly canManageFinalEvaluation = computed(
     () => this.authService.featureAccess()?.canManageFinalEvaluations ?? false
@@ -416,6 +445,34 @@ export class FinalEvaluationDetailComponent {
   readonly canViewImprovements = computed(
     () => this.authService.featureAccess()?.canViewImprovements ?? false
   );
+
+  /** Alineado a canNotifyFinalEvaluationQualificationByEvaluator (evaluador/a titular, no ORH ni consulta). */
+  readonly canNotifyQualificationByEmail = computed(() => {
+    const access = this.authService.featureAccess();
+    const ctx = this.authService.currentContext();
+    if (!access?.canManageFinalEvaluations || !ctx) {
+      return false;
+    }
+    if (!ctx.cycleActive || !ctx.hrPersonLinked || ctx.personId == null) {
+      return false;
+    }
+    const actor = ctx.functionalActor;
+    if (actor !== 'EVALUADOR' && actor !== 'EVALUADOR_Y_EVALUADO') {
+      return false;
+    }
+    const roles = this.authService.roles();
+    const blockedNotifyRoles = [
+      'ADMIN',
+      'ADMIN_SISTEMA',
+      'GDR_ORH',
+      'GDR_JUNTA_DIRECTIVOS',
+      'GDR_CONSULTA'
+    ];
+    if (blockedNotifyRoles.some((r) => roles.includes(r))) {
+      return false;
+    }
+    return roles.includes('GDR_USUARIO');
+  });
 
   readonly qualitativeRatingCode = computed(
     () => this.result()?.qualitativeRatingCode ?? this.evaluation()?.qualitativeRatingCode ?? null
@@ -494,6 +551,64 @@ export class FinalEvaluationDetailComponent {
         this.saving.set(false);
       }
     });
+  }
+
+  notifyQualificationByEmail(): void {
+    const detail = this.evaluation();
+    const evaluationId = detail?.evaluationId;
+    if (!this.canNotifyQualificationByEmail() || evaluationId == null) {
+      return;
+    }
+    if (!this.qualitativeRatingCode()) {
+      this.toastService.error(
+        'Calificación pendiente',
+        'Registre la calificación cualitativa consolidada antes de enviar la notificación por correo.'
+      );
+      return;
+    }
+    this.notifying.set(true);
+    this.finalEvaluationService.notifyQualificationByEmail(evaluationId).subscribe({
+      next: () => {
+        this.notifying.set(false);
+        this.toastService.success(
+          'Correo enviado',
+          'Se envió la notificación de calificación al correo institucional del evaluado.'
+        );
+      },
+      error: (error: Error) => {
+        this.notifying.set(false);
+        const raw = error.message?.trim() || 'No fue posible completar el envío.';
+        const { title, detail: msg } = this.classifyNotifyFailureMessage(raw);
+        this.toastService.error(title, msg);
+      }
+    });
+  }
+
+  private classifyNotifyFailureMessage(raw: string): { title: string; detail: string } {
+    const lower = raw.toLowerCase();
+    if (/\bplazo\b|h[aá]bil|d[ií]as h[aá]biles|cronograma|\bventana\b/.test(lower)) {
+      return { title: 'Plazo de notificación', detail: raw };
+    }
+    if (
+      /correo electr[oó]nico|correo del|destinatario|email|buz[oó]n/.test(lower) &&
+      (/no hay|v[aá]lid|actualice|institucional|vinculado/i.test(raw) || /obligatorio/i.test(lower))
+    ) {
+      return { title: 'Correo del evaluado', detail: raw };
+    }
+    if (
+      /no fue posible enviar|remitente configurado|smtp|servidor de correo|mail server|timed out|connection refused/i.test(
+        raw
+      )
+    ) {
+      return { title: 'Envío de correo (SMTP)', detail: raw };
+    }
+    if (/calificaci[oó]n cualitativa/.test(lower)) {
+      return { title: 'Calificación requerida', detail: raw };
+    }
+    if (raw.includes('403') || /permiso/i.test(raw)) {
+      return { title: 'Sin permiso para notificar', detail: raw };
+    }
+    return { title: 'No se pudo notificar', detail: raw };
   }
 
   private get detailsArray(): FormArray {
