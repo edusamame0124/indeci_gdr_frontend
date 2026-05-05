@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { switchMap } from 'rxjs';
@@ -8,7 +9,9 @@ import { FinalEvaluationService } from '../../../../core/final-evaluation/final-
 import {
   DocumentoFirmadoResumen,
   FormatoGdrPdfDownload,
+  HrOrgUnitOrganigrama,
   InicioFirma,
+  PageResponse,
   PlantillaDocumento,
   RegistrarRetornoFirmaPayload,
   SolicitudFirmaDetalle,
@@ -20,7 +23,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 @Component({
   selector: 'app-documents',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -42,7 +45,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
         <div class="page__header-left">
           <h1>Documentos firmados (Formatos)</h1>
           <p class="page__subtitle">
-            Flujo principal con preparacion documental, inicio de firma con Firma Peru y consulta posterior del documento firmado.
+            Consulta del estado de firma con Firma Peru, acciones sobre la solicitud y contingencia administrativa cuando corresponda.
           </p>
         </div>
         <div class="page__actions">
@@ -105,7 +108,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
         <div class="context-bar__divider"></div>
         <div class="context-bar__item">
           <span class="context-bar__label">Documentos activos</span>
-          <span class="context-bar__value">{{ documents().length }}</span>
+          <span class="context-bar__value">{{ signedDocumentsTotal() }}</span>
         </div>
       </div>
 
@@ -119,7 +122,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
             </div>
             <div>
               <h2 class="panel__title">Flujo principal de firma</h2>
-              <p class="panel__desc">Preparar, iniciar firma y consultar estado sin exponer el upload manual como camino principal.</p>
+              <p class="panel__desc">Iniciar firma, consultar estado y ver documentos asociados a la solicitud. La carga manual de contingencia está disponible cuando su perfil lo permite.</p>
             </div>
           </header>
 
@@ -156,52 +159,49 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
               <p>Seleccione un evaluado para habilitar el flujo documental principal del lote.</p>
             </div>
           } @else {
-            <form [formGroup]="signatureForm" (ngSubmit)="submitPreparation()" class="form-grid">
-              <label class="field">
-                <span class="field__label">Tipo documental</span>
-                <select formControlName="tipoDocumentoId" (change)="onDocumentTypeChange()">
-                  <option [ngValue]="null">Seleccione</option>
-                  @for (documentType of documentTypes(); track documentType.idTipoDocumento) {
-                    <option [ngValue]="documentType.idTipoDocumento">{{ documentType.nombreTipoDocumento }}</option>
-                  }
-                </select>
-              </label>
+            @if (canRegisterSignedDocuments()) {
+              <div class="contingency-section">
+                <form [formGroup]="uploadForm" (ngSubmit)="submitUpload()" class="form-grid">
+                  <label class="field field--full">
+                    <span class="field__label">DESCRIPCION</span>
+                    <textarea
+                      formControlName="descripcion"
+                      rows="3"
+                      maxlength="400"
+                      placeholder="Descripcion del documento a registrar"
+                    ></textarea>
+                    <small>Máximo 400 caracteres.</small>
+                  </label>
 
-              <label class="field">
-                <span class="field__label">Plantilla</span>
-                <select formControlName="plantillaId">
-                  <option [ngValue]="null">Seleccione</option>
-                  @for (template of availableTemplatesByType(); track template.idPlantilla) {
-                    <option [ngValue]="template.idPlantilla">{{ template.nombrePlantilla }}</option>
-                  }
-                </select>
-                <small>La plantilla se descarga y se prepara desde storage desacoplado, fuera de Oracle y fuera del repo.</small>
-              </label>
+                  <label class="field field--full">
+                    <span class="field__label">Archivo firmado</span>
+                    <input type="file" accept="application/pdf,.pdf" (change)="onFileSelected($event)" />
+                    <small>{{ selectedFileName() || 'Solo PDF. El archivo se almacena fuera de Oracle y fuera del repo.' }}</small>
+                  </label>
 
-              <div class="form-actions">
-                @if (canPrepareDocuments()) {
-                  <button
-                    type="submit"
-                    class="btn btn--primary"
-                    [disabled]="preparing() || signatureForm.invalid"
-                  >
-                    @if (preparing()) {
-                      <span class="loading-spinner loading-spinner--sm"></span>
-                    }
-                    {{ preparing() ? 'Preparando...' : 'Preparar documento' }}
-                  </button>
-                }
+                  <div class="form-actions">
+                    <button
+                      type="submit"
+                      class="btn btn--outline btn--sm"
+                      [disabled]="uploading() || uploadForm.invalid || !selectedFile()"
+                    >
+                      {{ uploading() ? 'Registrando...' : 'Registrar' }}
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
+            }
 
             @if (!canPrepareDocuments()) {
               <div class="alert alert--info" role="status">
                 <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
                   <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm1 11.6H9v-2h2v2Zm0-4H9V6.2h2v3.6Z"/>
                 </svg>
-                <span>Su perfil puede consultar el flujo documental, pero no preparar nuevas solicitudes de firma.</span>
+                <span>Su perfil puede consultar el flujo y usar contingencia si está habilitada; no puede crear nuevas solicitudes de preparación para firma desde esta pantalla.</span>
               </div>
             }
+
+       
 
             @if (currentRequest()) {
               <article class="request-card">
@@ -290,7 +290,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                     <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
                       <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
                     </svg>
-                    <span>La solicitud quedo con error. El sistema conserva la trazabilidad y permite preparar una nueva solicitud.</span>
+                    <span>La solicitud quedo con error. El sistema conserva la trazabilidad; para un nuevo intento coordine con quien gestione las solicitudes de firma en su entidad.</span>
                   </div>
                 }
 
@@ -299,46 +299,10 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                     <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
                       <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm1 11.6H9v-2h2v2Zm0-4H9V6.2h2v3.6Z"/>
                     </svg>
-                    <span>La firma fue cancelada. Puede preparar una nueva solicitud cuando corresponda.</span>
+                    <span>La firma fue cancelada. Para reanudar o iniciar otro tramite, siga las indicaciones de su entidad o el canal de gestión documental.</span>
                   </div>
                 }
               </article>
-            }
-
-            @if (canRegisterSignedDocuments()) {
-              <details class="contingency-panel">
-                <summary>Contingencia administrativa</summary>
-                <p>
-                  La carga manual se mantiene solo como contingencia tecnica o administrativa y no compite con el flujo principal.
-                </p>
-                <form [formGroup]="uploadForm" (ngSubmit)="submitUpload()" class="form-grid">
-                  <label class="field">
-                    <span class="field__label">Tipo documental</span>
-                    <select formControlName="tipoDocumentoId">
-                      <option [ngValue]="null">Seleccione</option>
-                      @for (documentType of documentTypes(); track documentType.idTipoDocumento) {
-                        <option [ngValue]="documentType.idTipoDocumento">{{ documentType.nombreTipoDocumento }}</option>
-                      }
-                    </select>
-                  </label>
-
-                  <label class="field field--full">
-                    <span class="field__label">Archivo firmado</span>
-                    <input type="file" accept="application/pdf,.pdf" (change)="onFileSelected($event)" />
-                    <small>{{ selectedFileName() || 'Solo PDF. El archivo se almacena fuera de Oracle y fuera del repo.' }}</small>
-                  </label>
-
-                  <div class="form-actions">
-                    <button
-                      type="submit"
-                      class="btn btn--outline btn--sm"
-                      [disabled]="uploading() || uploadForm.invalid || !selectedFile()"
-                    >
-                      {{ uploading() ? 'Registrando...' : 'Registrar contingencia' }}
-                    </button>
-                  </div>
-                </form>
-              </details>
             }
           }
         </article>
@@ -404,23 +368,21 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
               <p>No hay plantillas activas registradas para el lote actual.</p>
             </div>
           }
-        </article>
-      </section>
 
-      <article class="panel panel--full">
-        <header class="panel__header">
-          <div class="panel__header-icon">
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path d="M4.7 10.8h10.6v-1.6H4.7v1.6Zm0-4h10.6V5.2H4.7v1.6Zm0 8h7.2v-1.6H4.7v1.6Z"/>
-            </svg>
-          </div>
-          <div>
-            <h2 class="panel__title">Documentos firmados activos</h2>
-            <p class="panel__desc">Consulta minima de documentos vinculados al resultado consolidado del evaluado.</p>
-          </div>
-        </header>
+          <div class="signed-docs-in-panel">
+            <header class="panel__header signed-docs-in-panel__header">
+              <div class="panel__header-icon">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4.7 10.8h10.6v-1.6H4.7v1.6Zm0-4h10.6V5.2H4.7v1.6Zm0 8h7.2v-1.6H4.7v1.6Z"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="panel__title">Documentos firmados activos</h2>
+                <p class="panel__desc">Consulta minima de documentos vinculados al resultado consolidado del evaluado.</p>
+              </div>
+            </header>
 
-        @if (loadingDocuments()) {
+            @if (loadingDocuments()) {
           <div class="loading-state">
             <div class="loading-spinner"></div>
             <span>Cargando documentos firmados...</span>
@@ -432,33 +394,80 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
             </svg>
             <p>Seleccione un evaluado desde evaluacion final para ver documentos activos.</p>
           </div>
-        } @else if (documents().length) {
-          <div class="record-list record-list--wide">
-            @for (document of documents(); track document.idDocumentoFirmado) {
-              <article class="record-card">
-                <div class="record-card__head">
-                  <div>
-                    <span class="record-card__eyebrow">{{ document.tipoDocumento }}</span>
-                    <strong>{{ document.nombreOriginal }}</strong>
-                  </div>
-                  <span class="status-badge">
-                    <span class="status-badge__dot"></span>
-                    {{ document.estado }}
-                  </span>
-                </div>
-                <div class="record-card__meta record-card__meta--grid">
-                  <span>Evaluado: {{ document.evaluado }}</span>
-                  <span>Resultado: #{{ document.idResultado }}</span>
-                  <span>Version: {{ document.versionActual }}</span>
-                  <span>Tamano: {{ formatSize(document.tamanioBytes) }}</span>
-                  <span>Usuario: {{ document.usuarioCarga }}</span>
-                  <span>Fecha: {{ document.fechaCarga }}</span>
-                </div>
-                <a [routerLink]="['/dashboard/documentos/firmados', document.idDocumentoFirmado]" class="btn btn--outline btn--sm">
-                  Ver detalle
-                </a>
-              </article>
-            }
+        } @else if (signedDocuments().length > 0) {
+          <div class="doc-table-scroll">
+            <div class="doc-table-wrap">
+            <table class="doc-table" role="table" aria-label="Documentos firmados activos">
+              <thead>
+                <tr>
+                  <th scope="col">NOMBRE</th>
+                  <th scope="col">DESCRIPCION</th>
+                  <th scope="col">FECHA</th>
+                  <th scope="col" class="doc-table__th-actions">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (document of signedDocuments(); track document.idDocumentoFirmado) {
+                  <tr>
+                    <td>
+                      <button
+                        type="button"
+                        class="doc-table__name-link"
+                        (click)="downloadSignedDocument(document)"
+                      >
+                        {{ document.nombreOriginal }}
+                      </button>
+                      <div class="doc-table__tipo">Tipo: {{ signedDocumentListTypeLabel(document) }}</div>
+                    </td>
+                    <td class="doc-table__desc">{{ document.descripcionContingencia || '—' }}</td>
+                    <td class="doc-table__fecha">{{ document.fechaCarga | date: 'dd/MM/yyyy' }}</td>
+                    <td class="doc-table__actions">
+                      @if (canRegisterSignedDocuments()) {
+                        <div class="doc-actions-menu">
+                          <button
+                            type="button"
+                            class="doc-actions-menu__trigger"
+                            (click)="toggleRowActionsMenu($event, document.idDocumentoFirmado)"
+                            [attr.aria-expanded]="openActionsMenuId() === document.idDocumentoFirmado"
+                            aria-haspopup="true"
+                            [attr.aria-label]="'Acciones para ' + document.nombreOriginal"
+                          >
+                            <svg viewBox="0 0 20 20" aria-hidden="true" class="doc-actions-menu__icon">
+                              <path d="M3 5h14v1.5H3V5Zm0 4.2h14v1.5H3V9.2Zm0 4.3h14V15H3v-1.5Z"/>
+                            </svg>
+                          </button>
+                          @if (openActionsMenuId() === document.idDocumentoFirmado && actionsMenuViewportPosition(); as menuVp) {
+                            <div
+                              class="doc-actions-menu__popover doc-actions-menu__popover--fixed"
+                              role="menu"
+                              [style.top.px]="menuVp.top"
+                              [style.right.px]="menuVp.right"
+                              (click)="$event.stopPropagation()"
+                            >
+                              <button type="button" role="menuitem" class="doc-actions-menu__item" (click)="onFirmarMenuClick($event, document)">
+                                <svg class="doc-actions-menu__item-icon" viewBox="0 0 20 20" aria-hidden="true">
+                                  <path d="M12.5 3.2c.8 0 1.5.4 2 1l1.3 1.3c.6.6 1 1.4 1 2.3 0 .9-.4 1.7-1 2.3l-8.2 8.2H3.5v-4.2l8.1-8.1c.6-.6 1.4-1 2.3-1 .1 0 .3 0 .4.1Zm-.3 1.6a.9.9 0 0 0-.6.3L4.9 12.8v1.9h1.9l6.7-6.7a.5.5 0 0 0 0-.7L11.3 5a.5.5 0 0 0-.35-.15Z"/>
+                                </svg>
+                                Firmar
+                              </button>
+                              <button type="button" role="menuitem" class="doc-actions-menu__item doc-actions-menu__item--danger" (click)="deleteSignedDocumentRow($event, document)">
+                                <svg class="doc-actions-menu__item-icon" viewBox="0 0 20 20" aria-hidden="true">
+                                  <path d="M7 2.2h6v1.5h4v1.5H3V3.7h4v-1.5Zm-1.5 4.5h11l-.8 11.2H6.3l-.8-11.2Zm2.2 2v6h1.2v-6H7.7Zm3.4 0v6H12v-6h-1Z"/>
+                                </svg>
+                                Eliminar
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <span class="doc-table__actions-empty">—</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            </div>
           </div>
         } @else {
           <div class="empty-state">
@@ -468,7 +477,33 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
             <p>Aun no hay documentos firmados activos para el evaluado seleccionado.</p>
           </div>
         }
-      </article>
+
+            @if (!loadingDocuments() && signedDocumentsPage(); as sdp) {
+              @if (sdp.totalPages > 1) {
+                <nav class="signed-docs-pager" aria-label="Paginacion de documentos firmados activos">
+                  <button
+                    type="button"
+                    class="btn btn--ghost btn--sm signed-docs-pager__btn"
+                    [disabled]="sdp.first"
+                    (click)="goToSignedDocumentsPage(sdp.number - 1)"
+                  >
+                    Anterior
+                  </button>
+                  <span class="signed-docs-pager__status">Pagina {{ sdp.number + 1 }} de {{ sdp.totalPages }}</span>
+                  <button
+                    type="button"
+                    class="btn btn--ghost btn--sm signed-docs-pager__btn"
+                    [disabled]="sdp.last"
+                    (click)="goToSignedDocumentsPage(sdp.number + 1)"
+                  >
+                    Siguiente
+                  </button>
+                </nav>
+              }
+            }
+          </div>
+        </article>
+      </section>
 
       @if (returnModalOpen()) {
         <div class="modal-backdrop" (click)="closeReturnModal()"></div>
@@ -524,6 +559,82 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
               </button>
             </div>
           </form>
+        </section>
+      }
+
+      @if (firmarModalOpen()) {
+        <div class="modal-backdrop" (click)="closeFirmarModal()"></div>
+        <section class="modal modal--firmar" role="dialog" aria-modal="true" aria-labelledby="firmar-modal-title">
+          <div class="modal__header">
+            <div>
+              <h2 id="firmar-modal-title" class="modal__header-title-plain">Firmar archivo</h2>
+              @if (firmarTargetDocument(); as fd) {
+                <p class="modal__subtitle firmar-modal__file-name">{{ fd.nombreOriginal }}</p>
+              }
+            </div>
+            <button type="button" class="modal__close" (click)="closeFirmarModal()" aria-label="Cerrar modal">
+              <svg viewBox="0 0 20 20"><path d="M14.3 5.7l-1-1L10 8l-3.3-3.3-1 1L9 9l-3.3 3.3 1 1L10 10l3.3 3.3 1-1L11 9l3.3-3.3Z"/></svg>
+            </button>
+          </div>
+
+          <div class="firmar-modal__body">
+            <label class="field field--full">
+              <span class="field__label">Oficina</span>
+              @if (loadingFirmarCatalog()) {
+                <div class="loading-state loading-state--panel-tight">
+                  <div class="loading-spinner"></div>
+                  <span>Cargando oficinas...</span>
+                </div>
+              } @else if (firmarOrgCatalogError()) {
+                <p class="firmar-catalog-error">{{ firmarOrgCatalogError() }}</p>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="retryFirmarOfficeCatalog()">
+                  Reintentar
+                </button>
+              } @else if (firmarOfficeOptions().length === 0) {
+                <p class="hint-text">No hay oficinas disponibles.</p>
+              } @else {
+                <select
+                  class="firmar-select"
+                  [value]="firmarOfficeSelectValue()"
+                  (change)="onFirmarOfficeSelect($event)"
+                  aria-label="Seleccionar oficina para la firma"
+                >
+                  <option value="">Seleccione una oficina</option>
+                  @for (row of firmarOfficeOptions(); track row.id) {
+                    <option [value]="row.id.toString()">{{ row.name }}</option>
+                  }
+                </select>
+              }
+            </label>
+
+            <label class="field field--full">
+              <span class="field__label">Motivo de la firma</span>
+              <select class="firmar-select" [value]="firmarMotivo()" (change)="onFirmarMotivoSelect($event)">
+                @for (opt of firmarMotivoOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field field--full">
+              <span class="field__label">Apariencia de la firma</span>
+              <select class="firmar-select" [value]="firmarApariencia()" (change)="onFirmarAparienciaSelect($event)">
+                @for (opt of firmarAparienciaOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          <div class="modal__footer firmar-modal__footer">
+            <button type="button" class="btn btn--ghost" (click)="closeFirmarModal()">Cancelar</button>
+            <button type="button" class="btn btn--primary firmar-modal__send" (click)="submitFirmarArchivo()">
+              <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M12.5 3.2c.8 0 1.5.4 2 1l1.3 1.3c.6.6 1 1.4 1 2.3 0 .9-.4 1.7-1 2.3l-8.2 8.2H3.5v-4.2l8.1-8.1c.6-.6 1.4-1 2.3-1 .1 0 .3 0 .4.1Zm-.3 1.6a.9.9 0 0 0-.6.3L4.9 12.8v1.9h1.9l6.7-6.7a.5.5 0 0 0 0-.7L11.3 5a.5.5 0 0 0-.35-.15Z"/>
+              </svg>
+              Enviar
+            </button>
+          </div>
         </section>
       }
     </section>
@@ -604,11 +715,10 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .empty-state p { margin:0; color:#8b95a5; font-size:0.84rem; }
 
     /* ── Layout grid ── */
-    .layout-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; align-items:start; }
+    .layout-grid { display:grid; grid-template-columns:minmax(0, 5fr) minmax(0, 7fr); gap:14px; align-items:start; }
 
     /* ── Panel ── */
     .panel { border-radius:12px; background:#fff; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,0.04); padding:16px; display:grid; gap:14px; }
-    .panel--full { grid-column:1 / -1; }
     .panel__header { display:flex; align-items:flex-start; gap:12px; }
     .panel__header-icon { width:32px; height:32px; border-radius:8px; background:rgba(127,23,20,0.06); display:grid; place-items:center; flex:0 0 auto; }
     .panel__header-icon svg { width:16px; height:16px; fill:#7f1714; }
@@ -624,6 +734,46 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .panel--formats-catalog .panel__desc { font-size:0.71rem; margin-top:1px; line-height:1.35; }
     .panel--formats-catalog .loading-state--panel-tight { padding:22px 12px; }
     .panel--formats-catalog .empty-state--panel-tight { padding:22px 12px; gap:8px; }
+
+    .signed-docs-in-panel {
+      margin-top:10px;
+      padding-top:14px;
+      border-top:1px solid #eceef2;
+      display:grid;
+      gap:10px;
+      min-width:0;
+    }
+    .signed-docs-in-panel__header { gap:10px; }
+    .signed-docs-in-panel__header .panel__header-icon { width:28px; height:28px; border-radius:6px; }
+    .signed-docs-in-panel__header .panel__header-icon svg { width:14px; height:14px; }
+    .signed-docs-in-panel__header .panel__title { font-size:0.86rem; letter-spacing:-0.01em; }
+    .signed-docs-in-panel__header .panel__desc { font-size:0.71rem; margin-top:1px; line-height:1.35; }
+    .signed-docs-in-panel .loading-state { padding:24px 12px; }
+    .signed-docs-in-panel .empty-state { padding:22px 12px; }
+
+    .signed-docs-pager {
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      margin-top:4px;
+      padding-top:8px;
+    }
+    .signed-docs-pager__status { font-size:0.74rem; color:#667085; }
+    .signed-docs-pager__btn { min-width:92px; }
+
+    .doc-table-scroll {
+      min-width:0;
+      max-width:100%;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    .panel--formats-catalog .doc-table { font-size:0.78rem; }
+    .panel--formats-catalog .doc-table th { padding:8px 10px; font-size:0.65rem; }
+    .panel--formats-catalog .doc-table td { padding:10px; }
+    .panel--formats-catalog .doc-table__desc { max-width:none; }
 
     .record-list--format-catalog { gap:8px; }
 
@@ -689,6 +839,46 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     /* ── Record cards ── */
     .record-list { display:grid; gap:12px; }
     .record-list--wide { grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); }
+
+    /* ── Tabla documentos firmados ── */
+    .doc-table-wrap { overflow:visible; border:1px solid #e5e7eb; border-radius:12px; background:#fff; }
+    .doc-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    .doc-table th { text-align:left; padding:10px 12px; background:#f9fafb; color:#475467; font-size:0.68rem; font-weight:700; letter-spacing:0.06em; border-bottom:1px solid #e5e7eb; white-space:nowrap; }
+    .doc-table td { padding:12px; border-bottom:1px solid #f1f3f5; vertical-align:top; color:#344054; }
+    .doc-table tbody tr:last-child td { border-bottom:none; }
+    .doc-table__th-actions { text-align:right; }
+    .doc-table__name-link { display:inline; padding:0; border:none; background:none; font:inherit; font-weight:600; color:#1d4ed8; cursor:pointer; text-align:left; text-decoration:underline; text-underline-offset:2px; }
+    .doc-table__name-link:hover { color:#1e3a8a; }
+    .doc-table__tipo { margin-top:4px; font-size:0.74rem; color:#8b95a5; line-height:1.4; }
+    .doc-table__desc { max-width:280px; overflow-wrap:anywhere; word-break:break-word; color:#526274; }
+    .doc-table__fecha { white-space:nowrap; color:#475467; }
+    .doc-table__actions { text-align:right; white-space:nowrap; vertical-align:middle; }
+    .doc-table__actions-empty { color:#98a2b3; font-size:0.85rem; }
+    .doc-actions-menu { position:relative; display:inline-flex; justify-content:flex-end; }
+    .doc-actions-menu__trigger {
+      display:inline-grid; place-items:center; width:36px; height:36px; padding:0; border:1px solid #bfdbfe; border-radius:8px;
+      background:#eff6ff; cursor:pointer; color:#1d4ed8;
+    }
+    .doc-actions-menu__trigger:hover { background:#dbeafe; border-color:#93c5fd; }
+    .doc-actions-menu__icon { width:18px; height:18px; fill:currentColor; }
+    .doc-actions-menu__popover {
+      min-width:180px; padding:6px; margin:0;
+      background:#fff; border:1px solid #e5e7eb; border-radius:10px; box-shadow:0 10px 30px rgba(15,23,42,0.12);
+      display:grid; gap:2px;
+    }
+    .doc-actions-menu__popover--fixed {
+      position:fixed;
+      z-index:220;
+    }
+    .doc-actions-menu__item {
+      display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border:0; border-radius:8px; background:transparent;
+      font:inherit; font-size:0.82rem; font-weight:500; color:#1f2937; cursor:pointer; text-align:left;
+    }
+    .doc-actions-menu__item:hover { background:#f3f4f6; }
+    .doc-actions-menu__item--danger { color:#b91c1c; }
+    .doc-actions-menu__item--danger:hover { background:#fef2f2; }
+    .doc-actions-menu__item-icon { width:18px; height:18px; fill:currentColor; flex-shrink:0; }
+
     .record-card { border:1px solid #e5e7eb; border-radius:12px; background:#fff; padding:14px; display:grid; gap:10px; }
     .record-card__head { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
     .record-card__eyebrow { display:block; margin-bottom:4px; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color:#8b95a5; font-weight:700; }
@@ -702,10 +892,10 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .request-card__message { margin:0; color:#526274; font-size:0.8rem; line-height:1.5; }
     .action-group { display:flex; flex-wrap:wrap; gap:8px; }
 
-    /* ── Contingency ── */
-    .contingency-panel { border-top:1px solid #f1f3f5; padding-top:10px; display:grid; gap:10px; }
-    .contingency-panel summary { cursor:pointer; color:#7f1714; font-size:0.8rem; font-weight:700; }
-    .contingency-panel p { margin:0; color:#667085; font-size:0.78rem; line-height:1.5; }
+    /* ── Contingency (siempre visible) ── */
+    .contingency-section { border-top:1px solid #f1f3f5; padding-top:12px; display:grid; gap:10px; }
+    textarea { width:100%; min-width:0; border:1px solid #d0d5dd; border-radius:8px; padding:9px 12px; font:inherit; background:#fff; color:#1a1a2e; box-sizing:border-box; font-size:0.84rem; resize:vertical; min-height:72px; }
+    textarea:focus { outline:none; border-color:#7f1714; box-shadow:0 0 0 3px rgba(127,23,20,0.08); }
 
     /* ── Modal ── */
     .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,42,0.35); z-index:90; backdrop-filter:blur(2px); }
@@ -717,6 +907,17 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .modal__close { border:none; background:transparent; color:#8b95a5; width:32px; height:32px; border-radius:8px; cursor:pointer; display:inline-grid; place-items:center; padding:0; }
     .modal__close svg { width:16px; height:16px; fill:currentColor; }
     .modal__close:hover { background:#f1f3f5; color:#475467; }
+
+    .modal--firmar { width:min(520px, calc(100vw - 32px)); z-index:110; }
+    .modal__header-title-plain { margin:0; color:#1a1a2e; font-size:1.05rem; font-weight:700; }
+    .firmar-modal__file-name { margin:6px 0 0; word-break:break-word; }
+    .firmar-modal__body { display:grid; gap:14px; min-width:0; }
+    .firmar-catalog-error { margin:0 0 8px; font-size:0.8rem; line-height:1.4; color:#991b1b; }
+    .modal__footer { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .firmar-modal__footer { margin-top:4px; }
+    .firmar-modal__send { background:#2563eb; box-shadow:0 1px 3px rgba(37,99,235,0.25); }
+    .firmar-modal__send:hover { background:#1d4ed8; }
+    .visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 
     /* ── Responsive ── */
     @media (max-width: 920px) {
@@ -754,7 +955,11 @@ export class DocumentsComponent {
   readonly availableEvaluations = signal<FinalEvaluationSummary[]>([]);
   readonly documentTypes = signal<TipoDocumento[]>([]);
   readonly templates = signal<PlantillaDocumento[]>([]);
-  readonly documents = signal<DocumentoFirmadoResumen[]>([]);
+  readonly signedDocumentsPage = signal<PageResponse<DocumentoFirmadoResumen> | null>(null);
+  readonly signedDocumentsPageIndex = signal(0);
+  private readonly signedDocumentsPageSize = 10;
+  readonly signedDocuments = computed(() => this.signedDocumentsPage()?.content ?? []);
+  readonly signedDocumentsTotal = computed(() => this.signedDocumentsPage()?.totalElements ?? 0);
   readonly currentRequest = signal<SolicitudFirmaDetalle | null>(null);
   readonly lastStartInfo = signal<InicioFirma | null>(null);
   readonly loadingStatic = signal(true);
@@ -768,8 +973,37 @@ export class DocumentsComponent {
   readonly returnModalOpen = signal(false);
   readonly downloadingFormatoGdr = signal(false);
   readonly errorMessage = signal('');
+  /** Fila cuyo menú hamburguesa de acciones está abierto (null = ninguno). */
+  readonly openActionsMenuId = signal<number | null>(null);
+  /** Posición del popover en viewport (`position: fixed`) para evitar recorte por ancestors con overflow. */
+  readonly actionsMenuViewportPosition = signal<{ top: number; right: number } | null>(null);
   readonly selectedFileName = signal('');
   readonly returnFileName = signal('');
+  readonly firmarModalOpen = signal(false);
+  readonly firmarTargetDocument = signal<DocumentoFirmadoResumen | null>(null);
+  readonly firmarOfficeOptions = signal<HrOrgUnitOrganigrama[]>([]);
+  readonly loadingFirmarCatalog = signal(false);
+  readonly firmarOrgCatalogError = signal<string | null>(null);
+  readonly selectedOrgUnitId = signal<number | null>(null);
+  readonly firmarMotivo = signal('SOY_AUTOR');
+  readonly firmarApariencia = signal('SELLO_DESC_HORIZ');
+
+  readonly firmarMotivoOptions: ReadonlyArray<{ value: string; label: string }> = [
+    { value: 'SOY_AUTOR', label: 'Soy el autor del documento' },
+    { value: 'APRUEBO_CONTENIDO', label: 'Apruebo el contenido del documento' },
+    { value: 'CERTIFICO_COPIA', label: 'Certifico que es copia fiel del original' }
+  ];
+
+  readonly firmarAparienciaOptions: ReadonlyArray<{ value: string; label: string }> = [
+    { value: 'SELLO_DESC_HORIZ', label: 'Sello + Descripción Horizontal' },
+    { value: 'SELLO_DESC_VERT', label: 'Sello + Descripción Vertical' },
+    { value: 'SOLO_SELLO', label: 'Solo sello' }
+  ];
+
+  readonly firmarOfficeSelectValue = computed(() =>
+    this.selectedOrgUnitId() == null ? '' : String(this.selectedOrgUnitId())
+  );
+
   readonly canPrepareDocuments = computed(
     () => this.authService.featureAccess()?.canPrepareDocuments ?? false
   );
@@ -797,7 +1031,10 @@ export class DocumentsComponent {
   });
 
   readonly uploadForm = this.fb.group({
-    tipoDocumentoId: [null as number | null, [Validators.required]]
+    descripcion: [
+      '',
+      [Validators.required, Validators.minLength(1), Validators.maxLength(400)]
+    ]
   });
 
   readonly returnForm = this.fb.group({
@@ -863,7 +1100,8 @@ export class DocumentsComponent {
 
     this.errorMessage.set('');
     this.evaluatedId.set(selectedEvaluatedId);
-    this.documents.set([]);
+    this.signedDocumentsPageIndex.set(0);
+    this.signedDocumentsPage.set(null);
     this.currentRequest.set(null);
     this.lastStartInfo.set(null);
     void this.router.navigate([], {
@@ -881,8 +1119,25 @@ export class DocumentsComponent {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement | null;
     const file = input?.files?.item(0) ?? null;
+    if (!file) {
+      this.selectedFileValue = null;
+      this.selectedFileName.set('');
+      return;
+    }
+    const name = file.name.toLowerCase();
+    const mime = file.type.toLowerCase();
+    if (!name.endsWith('.pdf') || (mime !== '' && mime !== 'application/pdf')) {
+      this.errorMessage.set('Solo se permiten archivos PDF.');
+      this.selectedFileValue = null;
+      this.selectedFileName.set('');
+      if (input) {
+        input.value = '';
+      }
+      return;
+    }
+    this.errorMessage.set('');
     this.selectedFileValue = file;
-    this.selectedFileName.set(file?.name ?? '');
+    this.selectedFileName.set(file.name);
   }
 
   onReturnFileSelected(event: Event): void {
@@ -1103,18 +1358,25 @@ export class DocumentsComponent {
     }
     if (this.uploadForm.invalid || !this.selectedFile()) {
       this.uploadForm.markAllAsTouched();
-      this.errorMessage.set('Seleccione un tipo documental y un archivo PDF valido.');
+      this.errorMessage.set('Ingrese la descripcion y un archivo PDF valido.');
+      return;
+    }
+
+    const descripcionRaw = (this.uploadForm.getRawValue().descripcion ?? '').trim();
+    if (!descripcionRaw) {
+      this.uploadForm.markAllAsTouched();
+      this.errorMessage.set('Ingrese la descripcion y un archivo PDF valido.');
       return;
     }
 
     this.uploading.set(true);
     this.errorMessage.set('');
     this.documentsService
-      .registerSignedDocument(this.evaluatedId()!, this.uploadForm.getRawValue().tipoDocumentoId as number, this.selectedFile()!)
+      .registerSignedDocument(this.evaluatedId()!, descripcionRaw, this.selectedFile()!)
       .subscribe({
         next: () => {
           this.uploading.set(false);
-          this.uploadForm.reset({ tipoDocumentoId: null });
+          this.uploadForm.reset({ descripcion: '' });
           this.selectedFileValue = null;
           this.selectedFileName.set('');
           this.loadDocuments();
@@ -1137,6 +1399,150 @@ export class DocumentsComponent {
     return `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
+  /** Etiqueta de tipo en listado: contingencia (OTROS) segun lineamiento de pantalla. */
+  signedDocumentListTypeLabel(doc: DocumentoFirmadoResumen): string {
+    if (doc.codigoTipoDocumento === 'OTROS') {
+      return 'Formato GDR (firmado)';
+    }
+    return doc.tipoDocumento;
+  }
+
+  downloadSignedDocument(doc: DocumentoFirmadoResumen): void {
+    this.errorMessage.set('');
+    this.documentsService.getSignedDocumentFile(doc.idDocumentoFirmado, true).subscribe({
+      next: (blob) => this.downloadBlob(blob, doc.nombreOriginal),
+      error: (error: Error) => this.errorMessage.set(error.message)
+    });
+  }
+
+  @HostListener('document:click')
+  onDocumentClickCloseActionsMenu(): void {
+    this.openActionsMenuId.set(null);
+    this.actionsMenuViewportPosition.set(null);
+  }
+
+  toggleRowActionsMenu(event: Event, documentId: number): void {
+    event.stopPropagation();
+    const current = this.openActionsMenuId();
+    if (current === documentId) {
+      this.openActionsMenuId.set(null);
+      this.actionsMenuViewportPosition.set(null);
+      return;
+    }
+    const el = event.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    this.actionsMenuViewportPosition.set({
+      top: rect.bottom + 4,
+      right: window.innerWidth - rect.right
+    });
+    this.openActionsMenuId.set(documentId);
+  }
+
+  onFirmarMenuClick(event: Event, document: DocumentoFirmadoResumen): void {
+    event.stopPropagation();
+    this.openActionsMenuId.set(null);
+    this.actionsMenuViewportPosition.set(null);
+    this.firmarTargetDocument.set(document);
+    this.selectedOrgUnitId.set(null);
+    this.firmarMotivo.set('SOY_AUTOR');
+    this.firmarApariencia.set('SELLO_DESC_HORIZ');
+    this.firmarOfficeOptions.set([]);
+    this.firmarOrgCatalogError.set(null);
+    this.firmarModalOpen.set(true);
+    this.loadFirmarOffices();
+  }
+
+  closeFirmarModal(): void {
+    this.firmarModalOpen.set(false);
+    this.firmarTargetDocument.set(null);
+    this.firmarOfficeOptions.set([]);
+    this.firmarOrgCatalogError.set(null);
+    this.selectedOrgUnitId.set(null);
+  }
+
+  onFirmarOfficeSelect(event: Event): void {
+    const raw = (event.target as HTMLSelectElement).value;
+    if (raw === '') {
+      this.selectedOrgUnitId.set(null);
+      return;
+    }
+    const id = Number(raw);
+    this.selectedOrgUnitId.set(Number.isNaN(id) ? null : id);
+  }
+
+  private loadFirmarOffices(): void {
+    this.loadingFirmarCatalog.set(true);
+    this.firmarOrgCatalogError.set(null);
+    this.documentsService.listOrganizationalUnitsForSigning().subscribe({
+      next: (list) => {
+        this.firmarOfficeOptions.set(Array.isArray(list) ? list : []);
+        const selected = this.selectedOrgUnitId();
+        const rows = this.firmarOfficeOptions();
+        if (selected != null && !rows.some((r) => r.id === selected)) {
+          this.selectedOrgUnitId.set(null);
+        }
+        this.loadingFirmarCatalog.set(false);
+      },
+      error: (err: Error) => {
+        this.firmarOrgCatalogError.set(
+          err.message || 'No se pudo cargar el catalogo de oficinas. Compruebe la sesion o intente de nuevo.'
+        );
+        this.firmarOfficeOptions.set([]);
+        this.loadingFirmarCatalog.set(false);
+      }
+    });
+  }
+
+  retryFirmarOfficeCatalog(): void {
+    this.loadFirmarOffices();
+  }
+
+  onFirmarMotivoSelect(event: Event): void {
+    const v = (event.target as HTMLSelectElement).value;
+    this.firmarMotivo.set(v);
+  }
+
+  onFirmarAparienciaSelect(event: Event): void {
+    const v = (event.target as HTMLSelectElement).value;
+    this.firmarApariencia.set(v);
+  }
+
+  submitFirmarArchivo(): void {
+    if (this.selectedOrgUnitId() == null) {
+      this.toastService.error(
+        'Oficina requerida',
+        'Seleccione una oficina en el listado antes de enviar.'
+      );
+      return;
+    }
+    this.toastService.success(
+      'Solicitud registrada',
+      'La integracion con el proveedor externo de firma digital esta pendiente segun la linea institucional. Puede continuar el tramite cuando este habilitado.'
+    );
+    this.closeFirmarModal();
+  }
+
+  deleteSignedDocumentRow(event: Event, doc: DocumentoFirmadoResumen): void {
+    event.stopPropagation();
+    this.openActionsMenuId.set(null);
+    this.actionsMenuViewportPosition.set(null);
+    if (
+      !globalThis.confirm(
+        '¿Desactivar este documento firmado? Dejara de mostrarse en el listado de activos.'
+      )
+    ) {
+      return;
+    }
+    this.errorMessage.set('');
+    this.documentsService.deleteSignedDocument(doc.idDocumentoFirmado).subscribe({
+      next: () => {
+        this.loadDocuments();
+        this.toastService.success('Documento eliminado', 'El registro fue desactivado en el sistema.');
+      },
+      error: (err: Error) => this.errorMessage.set(err.message)
+    });
+  }
+
   downloadFormatoGdrPdfFile(): void {
     const evaluatedIdValue = this.evaluatedId();
     if (!evaluatedIdValue || !this.canPrepareDocuments()) {
@@ -1155,7 +1561,7 @@ export class DocumentsComponent {
     });
   }
 
-  /** Descarga PDF desde plantilla catalogada (uso distinto del Formato GDR PDF generado). */
+  /** Descarga PDF desde plantilla catalogada en DOC_PLANTILLA (distinto del Formato GDR Excel generado). */
   downloadTemplatePdf(template: PlantillaDocumento): void {
     this.documentsService.downloadTemplate(template.idPlantilla).subscribe({
       next: (blob) => {
@@ -1222,21 +1628,37 @@ export class DocumentsComponent {
     });
   }
 
-  private loadDocuments(): void {
-    if (!this.evaluatedId()) {
+  goToSignedDocumentsPage(page: number): void {
+    if (page < 0) {
       return;
     }
+    this.loadDocuments(page);
+  }
+
+  private loadDocuments(page?: number): void {
+    if (!this.evaluatedId()) {
+      this.signedDocumentsPage.set(null);
+      return;
+    }
+    const pageIndex = page ?? this.signedDocumentsPageIndex();
+    this.signedDocumentsPageIndex.set(pageIndex);
     this.loadingDocuments.set(true);
-    this.documentsService.listSignedDocuments(this.evaluatedId()!).subscribe({
-      next: (documents) => {
-        this.documents.set(documents);
-        this.loadingDocuments.set(false);
-      },
-      error: (error: Error) => {
-        this.errorMessage.set(error.message);
-        this.loadingDocuments.set(false);
-      }
-    });
+    this.documentsService
+      .listSignedDocuments(this.evaluatedId()!, pageIndex, this.signedDocumentsPageSize)
+      .subscribe({
+        next: (resp) => {
+          if (resp.content.length === 0 && resp.totalElements > 0 && pageIndex > 0) {
+            this.loadDocuments(pageIndex - 1);
+            return;
+          }
+          this.signedDocumentsPage.set(resp);
+          this.loadingDocuments.set(false);
+        },
+        error: (error: Error) => {
+          this.errorMessage.set(error.message);
+          this.loadingDocuments.set(false);
+        }
+      });
   }
 
   private downloadBlob(blob: Blob, fileName: string): void {

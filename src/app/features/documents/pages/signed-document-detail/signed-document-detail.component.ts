@@ -68,6 +68,12 @@ import { DocumentoFirmadoDetalle } from '../../../../core/documents/documents.mo
                 <span>Codigo tipo documental</span>
                 <strong>{{ detail()!.codigoTipoDocumento }}</strong>
               </div>
+              @if (detail()!.descripcionContingencia) {
+                <div class="detail-row">
+                  <span>DESCRIPCION</span>
+                  <strong class="detail-row__multiline">{{ detail()!.descripcionContingencia }}</strong>
+                </div>
+              }
               <div class="detail-row">
                 <span>Nombre original</span>
                 <strong>{{ detail()!.nombreOriginal }}</strong>
@@ -147,6 +153,7 @@ import { DocumentoFirmadoDetalle } from '../../../../core/documents/documents.mo
     .detail-row { display:grid; gap:3px; }
     .detail-row span { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color:#667085; font-weight:700; }
     .detail-row strong { color:#1f2937; font-size:0.82rem; line-height:1.45; overflow-wrap:anywhere; }
+    .detail-row__multiline { white-space:pre-wrap; font-weight:600; }
     .status-pill { display:inline-flex; align-items:center; justify-content:center; min-height:26px; padding:0 10px; border-radius:999px; background:rgba(15,23,42,0.04); color:#475467; font-size:0.74rem; font-weight:600; width:fit-content; }
     .action-row { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
     .primary-link, .secondary-link {

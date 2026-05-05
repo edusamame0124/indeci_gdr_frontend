@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../shared/models/api-response.model';
@@ -8,7 +8,9 @@ import {
   DocumentoFirmadoResumen,
   FORMATO_GDR_PDF_MIME,
   FormatoGdrPdfDownload,
+  HrOrgUnitOrganigrama,
   InicioFirma,
+  PageResponse,
   PlantillaDocumento,
   RegistrarRetornoFirmaPayload,
   SolicitudFirmaDetalle,
@@ -31,11 +33,21 @@ export class DocumentsService {
       .pipe(map((response) => response.data));
   }
 
-  listSignedDocuments(evaluatedId: number): Observable<DocumentoFirmadoResumen[]> {
+  listSignedDocuments(evaluatedId: number, page = 0, size = 10): Observable<PageResponse<DocumentoFirmadoResumen>> {
+    const params = new HttpParams()
+      .set('evaluatedId', evaluatedId)
+      .set('page', page)
+      .set('size', size);
     return this.http
-      .get<ApiResponse<DocumentoFirmadoResumen[]>>(`${environment.apiBaseUrl}/documentos/firmados`, {
-        params: { evaluatedId }
+      .get<ApiResponse<PageResponse<DocumentoFirmadoResumen>>>(`${environment.apiBaseUrl}/documentos/firmados`, {
+        params
       })
+      .pipe(map((response) => response.data));
+  }
+
+  listOrganizationalUnitsForSigning(): Observable<HrOrgUnitOrganigrama[]> {
+    return this.http
+      .get<ApiResponse<HrOrgUnitOrganigrama[]>>(`${environment.apiBaseUrl}/documentos/unidades-organizacionales`)
       .pipe(map((response) => response.data));
   }
 
@@ -99,10 +111,10 @@ export class DocumentsService {
       .pipe(map((response) => response.data));
   }
 
-  registerSignedDocument(evaluatedId: number, tipoDocumentoId: number, archivo: File): Observable<DocumentoFirmadoDetalle> {
+  registerSignedDocument(evaluatedId: number, descripcion: string, archivo: File): Observable<DocumentoFirmadoDetalle> {
     const formData = new FormData();
     formData.append('evaluatedId', String(evaluatedId));
-    formData.append('tipoDocumentoId', String(tipoDocumentoId));
+    formData.append('descripcion', descripcion);
     formData.append('archivo', archivo);
 
     return this.http
@@ -192,5 +204,11 @@ export class DocumentsService {
       params: { descarga: download },
       responseType: 'blob'
     });
+  }
+
+  deleteSignedDocument(documentId: number): Observable<void> {
+    return this.http
+      .delete<ApiResponse<unknown>>(`${environment.apiBaseUrl}/documentos/firmados/${documentId}`)
+      .pipe(map(() => undefined));
   }
 }

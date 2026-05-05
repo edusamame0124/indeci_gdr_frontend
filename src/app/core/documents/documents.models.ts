@@ -33,7 +33,9 @@ export interface DocumentoFirmadoResumen {
   idEvaluado: number;
   evaluado: string;
   idTipoDocumento: number;
+  codigoTipoDocumento: string;
   tipoDocumento: string;
+  descripcionContingencia: string | null;
   nombreOriginal: string;
   mimeType: string;
   tamanioBytes: number;
@@ -41,6 +43,27 @@ export interface DocumentoFirmadoResumen {
   estado: string;
   usuarioCarga: string;
   fechaCarga: string;
+}
+
+/** Respuesta paginada alineada a Spring `Page` (payload en `data`). */
+export interface PageResponse<T> {
+  content: T[];
+  number: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
+/** Fila de GET /documentos/unidades-organizacionales (oficinas activas: prefijo `OF_` o codigo institucional `OTI`). */
+export interface HrOrgUnitOrganigrama {
+  id: number;
+  code: string;
+  name: string;
+  parentId: number | null;
+  parentName: string | null;
+  displayOrder: number;
 }
 
 export interface DocumentoFirmadoDetalle {
@@ -53,6 +76,7 @@ export interface DocumentoFirmadoDetalle {
   idTipoDocumento: number;
   codigoTipoDocumento: string;
   tipoDocumento: string;
+  descripcionContingencia: string | null;
   nombreOriginal: string;
   mimeType: string;
   tamanioBytes: number;
