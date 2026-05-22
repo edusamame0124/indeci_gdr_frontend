@@ -108,7 +108,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
           rgba(8, 25, 55, 0.15),
           rgba(255, 255, 255, 0.10)
         ),
-        url('/assets/images/fondo_gestion.png');
+        url('/assets/images/fondo_gestion.jpeg');
 
       background-size: cover;
       background-position: center center;
