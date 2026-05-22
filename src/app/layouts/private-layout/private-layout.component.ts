@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { BrandingService } from '../../core/branding/branding.service';
@@ -13,11 +13,12 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
     <div class="private-shell">
       <header class="private-header">
         <div class="private-header__brand">
-          @if (branding()?.headerLogoAvailable && branding()?.headerLogoUrl) {
+          @if (branding()?.headerLogoAvailable && branding()?.headerLogoUrl && !headerLogoFailed()) {
             <img
               class="private-header__logo"
               [src]="branding()!.headerLogoUrl!"
               [alt]="branding()?.institutionName || 'Logo institucional'"
+              (error)="headerLogoFailed.set(true)"
             />
           } @else {
             @if (!brandingLoading()) {
@@ -321,6 +322,7 @@ export class PrivateLayoutComponent {
 
   readonly branding = this.brandingService.branding;
   readonly brandingLoading = this.brandingService.loading;
+  readonly headerLogoFailed = signal(false);
   readonly currentUser = this.authService.currentUser;
   readonly displayName = computed(() => this.currentUser()?.displayName ?? '');
   readonly userIdentifier = computed(() => {

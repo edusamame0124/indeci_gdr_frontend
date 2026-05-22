@@ -11,7 +11,7 @@ export class BrandingService {
   private readonly http = inject(HttpClient);
   private readonly brandingSignal = signal<LoginBrandingResponse | null>(this.restoreCachedBranding());
   private readonly loadingSignal = signal(false);
-  private loaded = this.brandingSignal() !== null;
+  private loaded = false;
 
   readonly branding = this.brandingSignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();

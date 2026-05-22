@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { BrandingService } from '../../core/branding/branding.service';
 import { UiToastComponent } from '../../shared/ui/ui-toast.component';
@@ -12,11 +12,12 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
     <div class="auth-shell">
       <header class="top-bar">
         <div class="top-bar__brand">
-          @if (branding()?.headerLogoAvailable && branding()?.headerLogoUrl) {
+          @if (branding()?.headerLogoAvailable && branding()?.headerLogoUrl && !headerLogoFailed()) {
             <img
               class="top-bar__logo"
               [src]="branding()!.headerLogoUrl!"
               [alt]="branding()?.institutionName || 'Logo institucional'"
+              (error)="headerLogoFailed.set(true)"
             />
           } @else {
             @if (!brandingLoading()) {
@@ -149,6 +150,7 @@ export class AuthLayoutComponent {
 
   readonly branding = this.brandingService.branding;
   readonly brandingLoading = this.brandingService.loading;
+  readonly headerLogoFailed = signal(false);
   readonly initials = computed(() => {
     const name = this.branding()?.institutionName?.trim();
     if (!name) {

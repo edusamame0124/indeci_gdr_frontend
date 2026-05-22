@@ -12,11 +12,12 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     <section class="login-page">
       <div class="login-card">
         <div class="login-card__logo-box">
-          @if (branding()?.mainLogoAvailable && branding()?.mainLogoUrl) {
+          @if (branding()?.mainLogoAvailable && branding()?.mainLogoUrl && !mainLogoFailed()) {
             <img
               class="login-card__logo"
               [src]="branding()!.mainLogoUrl!"
               [alt]="branding()?.institutionName || 'Logo institucional'"
+              (error)="mainLogoFailed.set(true)"
             />
           } @else {
             <div class="login-card__main-placeholder">
@@ -406,6 +407,7 @@ export class LoginComponent {
   readonly errorMessage = signal('');
   readonly infoMessage = signal('');
   readonly showPassword = signal(false);
+  readonly mainLogoFailed = signal(false);
 
   readonly initials = computed(() => {
     const name = this.branding()?.institutionName?.trim();
