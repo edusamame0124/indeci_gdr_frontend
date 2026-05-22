@@ -19,7 +19,11 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
               [alt]="branding()?.institutionName || 'Logo institucional'"
             />
           } @else {
-            <div class="top-bar__placeholder">{{ initials() || 'TU LOGO' }}</div>
+            @if (!brandingLoading()) {
+              <div class="top-bar__placeholder">{{ initials() || 'TU LOGO' }}</div>
+            } @else {
+              <div class="top-bar__loading" aria-hidden="true"></div>
+            }
           }
         </div>
 
@@ -37,15 +41,17 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
     .auth-layout-host {
       display: block;
       width: 100%;
-      min-height: 100dvh;
+      height: 100dvh;
+      overflow: hidden;
     }
 
     .auth-shell {
       width: 100%;
-      min-height: 100dvh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
       background: linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%);
+      overflow: hidden;
     }
 
     .top-bar {
@@ -90,6 +96,14 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
       white-space: nowrap;
     }
 
+    .top-bar__loading {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
     .top-bar__title {
       font-size: 0.76rem;
       font-weight: 600;
@@ -104,7 +118,7 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
       min-height: 0;
       display: flex;
       justify-content: center;
-      overflow: auto;
+      overflow: hidden;
     }
 
     @media (max-width: 640px) {
@@ -134,6 +148,7 @@ export class AuthLayoutComponent {
   private readonly brandingService = inject(BrandingService);
 
   readonly branding = this.brandingService.branding;
+  readonly brandingLoading = this.brandingService.loading;
   readonly initials = computed(() => {
     const name = this.branding()?.institutionName?.trim();
     if (!name) {

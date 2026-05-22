@@ -20,7 +20,14 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
               [alt]="branding()?.institutionName || 'Logo institucional'"
             />
           } @else {
-            <div class="private-header__logo-fallback">{{ brandingInitials() || 'TU LOGO' }}</div>
+            @if (!brandingLoading()) {
+              <div class="private-header__logo-fallback">{{ brandingInitials() || 'TU LOGO' }}</div>
+            } @else {
+              <div class="private-header__logo-loading" aria-hidden="true"></div>
+            }
+          }
+          @if (branding()?.institutionName || !brandingLoading()) {
+            <strong class="private-header__institution">{{ branding()?.institutionName || 'Nombre institucional' }}</strong>
           }
         </div>
 
@@ -93,17 +100,22 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
     .private-header__brand {
       display: flex;
       align-items: center;
+      gap: 10px;
       min-width: 88px;
-      max-width: 240px;
+      max-width: 420px;
       min-height: 32px;
       flex: 0 1 auto;
     }
 
     .private-header__logo {
-      max-height: 32px;
-      max-width: 240px;
+      width: 42px;
+      height: 42px;
       object-fit: contain;
       display: block;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.96);
+      padding: 3px;
+      flex: 0 0 auto;
     }
 
     .private-header__logo-fallback {
@@ -118,6 +130,29 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
       font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.06em;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .private-header__logo-loading {
+      width: 42px;
+      height: 42px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      flex: 0 0 auto;
+    }
+
+    .private-header__institution {
+      display: block;
+      min-width: 0;
+      max-width: 330px;
+      color: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 800;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
@@ -214,11 +249,11 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
       }
 
       .private-header__brand {
-        max-width: 180px;
+        max-width: 320px;
       }
 
-      .private-header__logo {
-        max-width: 180px;
+      .private-header__institution {
+        max-width: 260px;
       }
 
       .private-header__user {
@@ -240,6 +275,10 @@ import { UiToastComponent } from '../../shared/ui/ui-toast.component';
 
       .private-header__brand {
         max-width: 100%;
+      }
+
+      .private-header__institution {
+        max-width: calc(100vw - 90px);
       }
 
       .private-header__user {
@@ -281,6 +320,7 @@ export class PrivateLayoutComponent {
   private readonly brandingService = inject(BrandingService);
 
   readonly branding = this.brandingService.branding;
+  readonly brandingLoading = this.brandingService.loading;
   readonly currentUser = this.authService.currentUser;
   readonly displayName = computed(() => this.currentUser()?.displayName ?? '');
   readonly userIdentifier = computed(() => {

@@ -32,11 +32,11 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
         <form class="login-card__form" [formGroup]="form" (ngSubmit)="submit()">
           <label class="form-field">
-            <span>DNI o correo electrónico</span>
+            <span>Usuario</span>
             <input
               type="text"
               formControlName="loginId"
-              placeholder="Ingrese su DNI o correo"
+              placeholder="Ingrese su usuario"
               autocomplete="username"
             />
           </label>
@@ -98,7 +98,9 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     :host {
       display: block;
       width: 100%;
-      min-height: 100vh;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
 
       background-image:
         linear-gradient(
@@ -116,7 +118,8 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
     .login-page {
       width: 100%;
-      min-height: 100vh;
+      height: 100%;
+      min-height: 0;
       position: relative;
 
       display: flex;
@@ -124,13 +127,13 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
       align-items: center;
       justify-content: center;
 
-      padding: 24px;
-      overflow: auto;
+      padding: 16px 24px 34px;
+      overflow: hidden;
     }
 
     .login-card {
-      width: min(100%, 410px);
-      padding: 28px 28px 22px;
+      width: min(100%, 370px);
+      padding: 22px 26px 18px;
 
       border-radius: 20px;
       background: rgba(255, 255, 255, 0.96);
@@ -146,19 +149,19 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .login-card__logo-box {
       display: flex;
       justify-content: center;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .login-card__logo {
-      max-width: 92px;
-      max-height: 92px;
+      max-width: 76px;
+      max-height: 76px;
       object-fit: contain;
       display: block;
     }
 
     .login-card__main-placeholder {
-      width: 76px;
-      height: 76px;
+      width: 64px;
+      height: 64px;
       border-radius: 20px;
       display: grid;
       place-items: center;
@@ -171,12 +174,12 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
     .login-card__header {
       text-align: center;
-      margin-bottom: 22px;
+      margin-bottom: 16px;
     }
 
     .login-card__header h3 {
       margin: 0;
-      font-size: 1.28rem;
+      font-size: 1.12rem;
       font-weight: 800;
       color: #0f2b55;
       line-height: 1.25;
@@ -184,20 +187,20 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     }
 
     .login-card__header p {
-      margin: 8px 0 0;
-      font-size: 0.84rem;
+      margin: 7px 0 0;
+      font-size: 0.78rem;
       color: #667085;
       line-height: 1.5;
     }
 
     .login-card__form {
       display: grid;
-      gap: 14px;
+      gap: 11px;
     }
 
     .form-field {
       display: grid;
-      gap: 7px;
+      gap: 6px;
       font-weight: 700;
       color: #344054;
     }
@@ -209,11 +212,11 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .form-field input[type='text'],
     .form-field input[type='password'] {
       width: 100%;
-      height: 42px;
+      height: 38px;
       border-radius: 12px;
       border: 1px solid #d0d7e2;
       background: #ffffff;
-      padding: 9px 13px;
+      padding: 8px 12px;
       outline: none;
       font-size: 0.86rem;
       box-sizing: border-box;
@@ -263,7 +266,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
     .submit-button {
       width: 100%;
-      height: 44px;
+      height: 40px;
 
       border: none;
       border-radius: 12px;
@@ -314,7 +317,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
     .reset-link {
       display: inline-flex;
-      margin-top: 16px;
+      margin-top: 12px;
       justify-content: center;
       width: 100%;
       text-decoration: none;

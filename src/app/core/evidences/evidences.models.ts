@@ -8,6 +8,9 @@ export interface EvidenceSummary {
   expectedFormatCode: string;
   expectedFormatName: string;
   expectedDate: string | null;
+  fileOriginalName: string | null;
+  fileSizeBytes: number | null;
+  fileAvailable: boolean;
   statusCode: string;
   statusName: string;
   latestReviewComment: string | null;
@@ -40,6 +43,10 @@ export interface EvidenceDetail {
   expectedFormatCode: string;
   expectedFormatName: string;
   expectedDate: string | null;
+  fileOriginalName: string | null;
+  fileMimeType: string | null;
+  fileSizeBytes: number | null;
+  fileAvailable: boolean;
   statusCode: string;
   statusName: string;
   openCorrectiveActionDetail: string | null;

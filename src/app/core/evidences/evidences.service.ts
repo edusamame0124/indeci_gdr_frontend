@@ -26,15 +26,15 @@ export class EvidencesService {
       .pipe(map((response) => response.data));
   }
 
-  createEvidence(goalId: number, payload: EvidenceUpsertRequest): Observable<EvidenceDetail> {
+  createEvidence(goalId: number, payload: EvidenceUpsertRequest, file: File | null = null): Observable<EvidenceDetail> {
     return this.http
-      .post<ApiResponse<EvidenceDetail>>(`${environment.apiBaseUrl}/metas/${goalId}/evidencias`, payload)
+      .post<ApiResponse<EvidenceDetail>>(`${environment.apiBaseUrl}/metas/${goalId}/evidencias`, this.toEvidenceFormData(payload, file))
       .pipe(map((response) => response.data));
   }
 
-  updateEvidence(evidenceId: number, payload: EvidenceUpsertRequest): Observable<EvidenceDetail> {
+  updateEvidence(evidenceId: number, payload: EvidenceUpsertRequest, file: File | null = null): Observable<EvidenceDetail> {
     return this.http
-      .put<ApiResponse<EvidenceDetail>>(`${environment.apiBaseUrl}/evidencias/${evidenceId}`, payload)
+      .put<ApiResponse<EvidenceDetail>>(`${environment.apiBaseUrl}/evidencias/${evidenceId}`, this.toEvidenceFormData(payload, file))
       .pipe(map((response) => response.data));
   }
 
@@ -42,5 +42,32 @@ export class EvidencesService {
     return this.http
       .post<ApiResponse<EvidenceDetail>>(`${environment.apiBaseUrl}/evidencias/${evidenceId}/revision`, payload)
       .pipe(map((response) => response.data));
+  }
+
+  evidenceFileUrl(evidenceId: number): string {
+    return `${environment.apiBaseUrl}/evidencias/${evidenceId}/archivo`;
+  }
+
+  downloadEvidenceFile(evidenceId: number): Observable<Blob> {
+    return this.http.get(`${environment.apiBaseUrl}/evidencias/${evidenceId}/archivo`, {
+      responseType: 'blob'
+    });
+  }
+
+  private toEvidenceFormData(payload: EvidenceUpsertRequest, file: File | null): FormData {
+    const formData = new FormData();
+    formData.append('title', payload.title);
+    if (payload.detail) {
+      formData.append('detail', payload.detail);
+    }
+    formData.append('evidenceTypeCode', payload.evidenceTypeCode);
+    formData.append('expectedFormatCode', payload.expectedFormatCode);
+    if (payload.expectedDate) {
+      formData.append('expectedDate', payload.expectedDate);
+    }
+    if (file) {
+      formData.append('archivo', file, file.name);
+    }
+    return formData;
   }
 }

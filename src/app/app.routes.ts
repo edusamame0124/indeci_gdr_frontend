@@ -6,6 +6,7 @@ import { LoginComponent } from './features/auth/pages/login/login.component';
 import { AccessHomeComponent } from './features/auth/pages/access-home/access-home.component';
 import { AssignmentListComponent } from './features/hr/pages/assignment-list/assignment-list.component';
 import { CatalogsComponent } from './features/admin/pages/catalogs/catalogs.component';
+import { InstitutionBrandingComponent } from './features/admin/pages/institution-branding/institution-branding.component';
 import { UserManagementComponent } from './features/admin/pages/user-management/user-management.component';
 import { ParticipacionGdrComponent } from './features/admin/pages/participacion-gdr/participacion-gdr.component';
 import { IndicatorListComponent } from './features/indicators/pages/indicator-list/indicator-list.component';
@@ -56,6 +57,12 @@ export const routes: Routes = [
       {
         path: 'admin/users',
         component: UserManagementComponent,
+        canActivate: [featureAccessGuard],
+        data: { feature: 'userManagement' }
+      },
+      {
+        path: 'admin/branding',
+        component: InstitutionBrandingComponent,
         canActivate: [featureAccessGuard],
         data: { feature: 'userManagement' }
       },

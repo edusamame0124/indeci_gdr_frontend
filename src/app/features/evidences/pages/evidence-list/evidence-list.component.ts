@@ -129,6 +129,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                   <th>Formato</th>
                   <th>Estado</th>
                   <th>Fecha esperada</th>
+                  <th>Archivo</th>
                   <th>Último seguimiento</th>
                   <th class="th--actions">Acciones</th>
                 </tr>
@@ -155,6 +156,16 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                         </svg>
                         {{ evidence.expectedDate || 'Sin fecha' }}
                       </span>
+                    </td>
+                    <td class="td--file">
+                      @if (evidence.fileAvailable) {
+                        <button type="button" class="file-link file-link--button" (click)="downloadEvidenceFile(evidence)">
+                          {{ evidence.fileOriginalName || 'Archivo adjunto' }}
+                        </button>
+                        <span class="td--file-size">{{ formatFileSize(evidence.fileSizeBytes) }}</span>
+                      } @else {
+                        Sin archivo
+                      }
                     </td>
                     <td class="td--comment">
                       @if (evidence.latestReviewQualificationName) {
@@ -224,6 +235,19 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
                   <div class="evidence-card__field">
                     <span>Fecha esperada</span>
                     <strong>{{ evidence.expectedDate || 'Sin fecha' }}</strong>
+                  </div>
+                  <div class="evidence-card__field evidence-card__field--full">
+                    <span>Archivo</span>
+                    <strong>
+                      @if (evidence.fileAvailable) {
+                        <button type="button" class="file-link file-link--button" (click)="downloadEvidenceFile(evidence)">
+                          {{ evidence.fileOriginalName || 'Archivo adjunto' }}
+                        </button>
+                        <span class="evidence-card__file-size">{{ formatFileSize(evidence.fileSizeBytes) }}</span>
+                      } @else {
+                        Sin archivo adjunto
+                      }
+                    </strong>
                   </div>
                   <div class="evidence-card__field evidence-card__field--full">
                     <span>Seguimiento</span>
@@ -328,6 +352,15 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
             <label class="field">
               <span class="field__label">Fecha esperada</span>
               <input type="date" formControlName="expectedDate" />
+            </label>
+
+            <label class="field field--full">
+              <span class="field__label">Archivo de evidencia</span>
+              <input type="file" (change)="onEvidenceFileSelected($event)" [accept]="acceptedFileTypes()" />
+              <span class="field__hint">Máximo permitido 10 MB. El tipo de archivo debe coincidir con el formato esperado.</span>
+              @if (selectedEvidenceFile()) {
+                <span class="file-chip">{{ selectedEvidenceFile()!.name }} Â· {{ formatFileSize(selectedEvidenceFile()!.size) }}</span>
+              }
             </label>
 
             <div class="form-actions">
@@ -483,6 +516,8 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .td--date { display:inline-flex; align-items:center; gap:5px; }
     .td--date-icon { width:14px; height:14px; fill:#8b95a5; flex:0 0 auto; }
     .td--comment { max-width:220px; color:#667085; font-size:0.78rem; overflow-wrap:anywhere; }
+    .td--file { max-width:220px; color:#667085; font-size:0.78rem; overflow-wrap:anywhere; }
+    .td--file-size, .evidence-card__file-size { display:block; margin-top:3px; color:#8b95a5; font-size:0.72rem; font-weight:500; }
     .td--qual-line { font-weight:600; color:#344054; display:block; }
     .td--qual-sub { font-size:0.72rem; color:#667085; margin-top:4px; display:block; line-height:1.35; }
     tbody tr:hover { background:#fafbfc; }
@@ -501,6 +536,9 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .evidence-card__qual { display:block; font-weight:600; margin-bottom:2px; }
     .evidence-card__qual-sub { display:block; font-size:0.72rem; color:#667085; font-weight:500; line-height:1.35; }
     .evidence-card__actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .file-link { color:#7f1714; font-weight:700; text-decoration:none; }
+    .file-link:hover { text-decoration:underline; }
+    .file-link--button { border:0; background:transparent; padding:0; font:inherit; cursor:pointer; text-align:left; max-width:100%; overflow-wrap:anywhere; }
 
     /* ── Pagination ── */
     .pagination { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 18px; border-top:1px solid #f1f3f5; flex-wrap:wrap; }
@@ -513,10 +551,13 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     .field { display:grid; gap:6px; min-width:0; }
     .field__label { font-size:0.78rem; color:#344054; font-weight:600; }
     .field__required { color:#dc2626; }
+    .field__hint { color:#667085; font-size:0.72rem; line-height:1.4; }
     .field--full, .form-actions { grid-column:1 / -1; }
     input, textarea, select { width:100%; min-width:0; border:1px solid #d0d5dd; border-radius:8px; padding:9px 12px; font:inherit; background:#fff; color:#1a1a2e; box-sizing:border-box; font-size:0.84rem; }
+    input[type='file'] { padding:8px 10px; }
     input:focus, textarea:focus, select:focus { outline:none; border-color:#7f1714; box-shadow:0 0 0 3px rgba(127,23,20,0.08); }
     textarea { resize:vertical; min-height:84px; max-width:100%; }
+    .file-chip { display:inline-flex; width:fit-content; max-width:100%; padding:5px 9px; border-radius:999px; background:#f8fafc; border:1px solid #e5e7eb; color:#344054; font-size:0.74rem; font-weight:600; overflow-wrap:anywhere; }
     .form-actions { display:flex; justify-content:flex-end; gap:8px; padding-top:6px; min-width:0; }
 
     /* ── Modal ── */
@@ -573,6 +614,15 @@ export class EvidenceListComponent {
   readonly errorMessage = signal('');
   readonly currentPage = signal(1);
   readonly pageSize = 5;
+  readonly selectedEvidenceFile = signal<File | null>(null);
+  private readonly maxEvidenceFileSizeBytes = 10 * 1024 * 1024;
+  private readonly acceptedFileTypesByFormat: Record<string, string> = {
+    IMAGEN: '.jpg,.jpeg,.png,image/jpeg,image/png',
+    DOCUMENTO: '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ACTA: '.pdf,application/pdf',
+    EXCEL: '.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    OTRO: '.jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx'
+  };
   readonly evidenceTypeOptions = [
     { code: 'AVANCE', name: 'Evidencia de avance' },
     { code: 'FINAL', name: 'Evidencia final' }
@@ -651,6 +701,52 @@ export class EvidenceListComponent {
     return this.expectedFormatOptions.find((option) => option.code === current.expectedFormatCode)?.name ?? 'Sin formato';
   }
 
+  formatFileSize(size: number | null | undefined): string {
+    if (!size || size <= 0) {
+      return '';
+    }
+    if (size < 1024 * 1024) {
+      return `${Math.ceil(size / 1024)} KB`;
+    }
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  acceptedFileTypes(): string {
+    const code = this.form.controls.expectedFormatCode.value || 'OTRO';
+    return this.acceptedFileTypesByFormat[code] ?? this.acceptedFileTypesByFormat['OTRO'];
+  }
+
+  onEvidenceFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (!file) {
+      this.selectedEvidenceFile.set(null);
+      return;
+    }
+    if (file.size > this.maxEvidenceFileSizeBytes) {
+      this.selectedEvidenceFile.set(null);
+      input.value = '';
+      this.errorMessage.set('El archivo de evidencia no debe superar 10 MB.');
+      return;
+    }
+    this.selectedEvidenceFile.set(file);
+    this.errorMessage.set('');
+  }
+
+  downloadEvidenceFile(evidence: EvidenceSummary): void {
+    this.evidencesService.downloadEvidenceFile(evidence.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = evidence.fileOriginalName || 'evidencia';
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (error: Error) => this.errorMessage.set(error.message)
+    });
+  }
+
   goToPage(page: number): void {
     const clamped = Math.max(1, Math.min(page, this.totalPages()));
     this.currentPage.set(clamped);
@@ -661,6 +757,7 @@ export class EvidenceListComponent {
       return;
     }
     this.editingEvidenceId.set(null);
+    this.selectedEvidenceFile.set(null);
     this.form.reset({ title: '', detail: '', evidenceTypeCode: '', expectedFormatCode: '', expectedDate: '' });
     this.modalOpen.set(true);
   }
@@ -672,6 +769,7 @@ export class EvidenceListComponent {
     this.evidencesService.getEvidence(evidenceId).subscribe({
       next: (evidence) => {
         this.editingEvidenceId.set(evidence.id);
+        this.selectedEvidenceFile.set(null);
         this.form.reset({
           title: evidence.title,
           detail: evidence.detail ?? '',
@@ -692,6 +790,7 @@ export class EvidenceListComponent {
   closeModal(): void {
     this.modalOpen.set(false);
     this.editingEvidenceId.set(null);
+    this.selectedEvidenceFile.set(null);
     this.saving.set(false);
   }
 
@@ -793,8 +892,8 @@ export class EvidenceListComponent {
     this.saving.set(true);
     this.errorMessage.set('');
     const request$ = this.editingEvidenceId()
-      ? this.evidencesService.updateEvidence(this.editingEvidenceId() as number, payload)
-      : this.evidencesService.createEvidence(this.goalId, payload);
+      ? this.evidencesService.updateEvidence(this.editingEvidenceId() as number, payload, this.selectedEvidenceFile())
+      : this.evidencesService.createEvidence(this.goalId, payload, this.selectedEvidenceFile());
 
     request$.subscribe({
       next: () => {
@@ -840,7 +939,10 @@ export class EvidenceListComponent {
               statusName: updated.statusName,
               latestReviewComment: latest?.comment ?? null,
               latestReviewQualificationCode: latest?.qualificationCode ?? null,
-              latestReviewQualificationName: latest?.qualificationName ?? null
+              latestReviewQualificationName: latest?.qualificationName ?? null,
+              fileOriginalName: updated.fileOriginalName,
+              fileSizeBytes: updated.fileSizeBytes,
+              fileAvailable: updated.fileAvailable
             }
           : row
       )
