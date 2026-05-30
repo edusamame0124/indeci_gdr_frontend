@@ -146,6 +146,58 @@ export class AuthService {
     this.router.navigate(['/dashboard']);
   }
 
+  /**
+   * SSO Fase 3 — Ingiere el token del SISRH al entrar a GDR desde el Portal
+   * Selector (`/?token=<JWT>`). Decodifica el payload (sub + sistemas.rendimiento)
+   * y establece una sesión mínima con el token como accessToken; el resto del
+   * perfil (context/featureAccess) lo hidrata `me()` al cargar el dashboard.
+   * Devuelve true si estableció la sesión.
+   */
+  ingestSsoToken(token: string): boolean {
+    const payload = this.decodeJwtPayload(token);
+    const subject = payload?.['sub'];
+    if (!payload || typeof subject !== 'string' || subject.length === 0) {
+      return false;
+    }
+    const sistemas = payload['sistemas'] as Record<string, unknown> | undefined;
+    const rendimiento = sistemas?.['rendimiento'];
+    const roles = Array.isArray(rendimiento) ? rendimiento.map((r) => String(r)) : [];
+
+    const session: UserSession = {
+      username: subject,
+      email: null,
+      displayName: subject,
+      roles,
+      context: null,
+      featureAccess: null,
+      accessToken: token,
+      refreshToken: '',
+      rememberDevice: false
+    };
+    this.persistSession(session);
+    return true;
+  }
+
+  private decodeJwtPayload(token: string): Record<string, unknown> | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length < 2) {
+        return null;
+      }
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+      const json = decodeURIComponent(
+        atob(padded)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(json) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+
   private applyTokenResponse(tokenResponse: TokenResponse, rememberDevice: boolean): void {
     const current = this.sessionSignal();
     const nextSession: UserSession = {
