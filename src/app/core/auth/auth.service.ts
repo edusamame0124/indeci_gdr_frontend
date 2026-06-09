@@ -48,7 +48,10 @@ export class AuthService {
   }
 
   logout(notifyServer = true): void {
-    const refreshToken = this.sessionSignal()?.refreshToken;
+    const session = this.sessionSignal();
+    const refreshToken = session?.refreshToken;
+    const isSsoSession = !!session?.accessToken && !refreshToken;
+
     if (notifyServer && refreshToken) {
       const payload: RefreshTokenRequest = { refreshToken };
       this.http.post<ApiResponse<null>>(`${environment.apiBaseUrl}/auth/logout`, payload).subscribe({
@@ -56,6 +59,13 @@ export class AuthService {
       });
     }
     this.clearSession();
+
+    if (isSsoSession && environment.sisrhPortalUrl) {
+      const base = environment.sisrhPortalUrl.replace(/\/$/, '');
+      window.location.assign(`${base}/auth/seleccionar-sistema`);
+      return;
+    }
+
     this.router.navigate(['/login']);
   }
 
