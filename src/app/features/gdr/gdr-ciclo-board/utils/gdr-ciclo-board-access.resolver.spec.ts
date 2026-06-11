@@ -56,6 +56,7 @@ function noContext(): CicloBoardContext {
     planificacionCompletadaEn: null,
     planificacionCompletadaPor: null,
     cronogramaCompleto: false,
+    seguimientoMinimoSeisMeses: false,
     participantesRegistrados: false,
     asignacionesCompletas: false,
     cieAplica: false,
@@ -93,10 +94,10 @@ describe('resolveGdrBoardCards', () => {
     expect(f2?.blockReasonCode).toBe('NO_APLICA_ROL');
   });
 
-  it('F9 oportunidades → NO_APLICA para actor EVALUADOR puro (showWhen excluye EVALUADOR)', () => {
+  it('F9 oportunidades → ACTIVO para actor EVALUADOR en EN_SEGUIMIENTO (B1 fix)', () => {
     const cards = resolveGdrBoardCards('EN_SEGUIMIENTO', 'EVALUADOR', fullAccess(), noContext());
     const f9 = card('oportunidades-mejora', cards);
-    expect(f9?.state).toBe('NO_APLICA');
+    expect(f9?.state).toBe('ACTIVO');
   });
 
   it('F1 cronograma → SOLO_LECTURA en EN_SEGUIMIENTO sin excepción (D-02)', () => {

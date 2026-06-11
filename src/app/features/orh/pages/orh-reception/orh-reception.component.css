@@ -27,7 +27,7 @@
 }
 
 .breadcrumb a {
-  color: #7f1714;
+  color: #0077A8;
   font-weight: 700;
   text-decoration: none;
 }
@@ -41,7 +41,7 @@
 
 .workspace__eyebrow,
 .reception-panel__eyebrow {
-  color: #7f1714;
+  color: #D96500;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -85,8 +85,8 @@
 
 .button--primary,
 .button--action {
-  background: #7f1714;
-  border: 1px solid #7f1714;
+  background: #0077A8;
+  border: 1px solid #0077A8;
   color: #ffffff;
 }
 
@@ -228,8 +228,8 @@
 }
 
 .tabs__button--active {
-  background: #7f1714 !important;
-  border-color: #7f1714 !important;
+  background: #0077A8 !important;
+  border-color: #0077A8 !important;
   color: #ffffff !important;
 }
 
@@ -254,7 +254,7 @@
   animation: spin 0.7s linear infinite;
   border: 2px solid #e2e8f0;
   border-radius: 50%;
-  border-top-color: #7f1714;
+  border-top-color: #0077A8;
   height: 20px;
   width: 20px;
 }

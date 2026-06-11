@@ -2,7 +2,7 @@
 .workspace__container { max-width: 1100px; margin: 0 auto; }
 
 .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #64748b; margin-bottom: 20px; }
-.breadcrumb a { color: #7f1714; text-decoration: none; }
+.breadcrumb a { color: #0077A8; text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
 
 .workspace__hero {
@@ -37,7 +37,7 @@
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .caso-card:hover { border-color: #cbd5e1; }
-.caso-card--activo { border-color: #7f1714; box-shadow: 0 0 0 1px #7f1714; }
+.caso-card--activo { border-color: #0077A8; box-shadow: 0 0 0 1px #0077A8; }
 .caso-card__cabecera { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
 .caso-card__numero { font-size: 0.82rem; color: #1e293b; }
 .caso-card__evaluado { font-size: 0.84rem; font-weight: 600; color: #334155; margin-bottom: 6px; }
@@ -92,7 +92,7 @@
   display: flex; align-items: center; gap: 8px;
   font-size: 0.84rem; color: #1e293b; margin-bottom: 8px; cursor: pointer;
 }
-.decision-opcion input { accent-color: #7f1714; }
+.decision-opcion input { accent-color: #0077A8; }
 
 .campo { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 12px; }
 .campo textarea,
@@ -102,7 +102,7 @@
 }
 .campo textarea { resize: vertical; }
 .campo textarea:focus,
-.campo select:focus { outline: none; border-color: #7f1714; }
+.campo select:focus { outline: none; border-color: #0077A8; }
 .campo textarea:disabled,
 .campo select:disabled { background: #f8fafc; color: #94a3b8; }
 .campo__contador { align-self: flex-end; font-size: 0.7rem; font-weight: 500; color: #94a3b8; }
@@ -133,8 +133,8 @@
 
 .btn { display: inline-flex; align-items: center; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.15s; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn--primary { background: #7f1714; color: #fff; padding: 8px 20px; font-size: 0.86rem; }
-.btn--primary:hover:not(:disabled) { background: #991b1b; }
+.btn--primary { background: #0077A8; color: #fff; padding: 8px 20px; font-size: 0.86rem; }
+.btn--primary:hover:not(:disabled) { background: #005E8C; }
 .btn--secondary { background: #f1f5f9; color: #475569; padding: 8px 16px; font-size: 0.86rem; border: 1px solid #e2e8f0; }
 .acta-download { margin-top: 12px; }
 .btn--acta { margin-top: 0; }

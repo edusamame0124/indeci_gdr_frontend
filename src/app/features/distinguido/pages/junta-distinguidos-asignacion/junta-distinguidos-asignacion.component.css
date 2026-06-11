@@ -2,7 +2,7 @@
 .workspace__container { max-width: 1200px; margin: 0 auto; }
 
 .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #64748b; margin-bottom: 20px; }
-.breadcrumb a { color: #7f1714; text-decoration: none; }
+.breadcrumb a { color: #0077A8; text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
 
 .workspace__hero { margin-bottom: 20px; }
@@ -50,8 +50,8 @@
 
 .btn { border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.86rem; padding: 8px 20px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn--primary { background: #7f1714; color: #fff; }
-.btn--primary:hover:not(:disabled) { background: #991b1b; }
+.btn--primary { background: #0077A8; color: #fff; }
+.btn--primary:hover:not(:disabled) { background: #005E8C; }
 .btn--secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 .acta-download { margin-top: 12px; }
 .btn--acta { margin-top: 0; }

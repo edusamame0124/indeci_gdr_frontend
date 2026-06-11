@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../shared/models/api-response.model';
-import { CicloBoardContextApiResponse, CicloConCronogramaResponse, CronogramaEtapaResponse, PlanningChecklistApiResponse } from './cycles.models';
+import { CicloBoardContextApiResponse, CicloConCronogramaResponse, CronogramaEtapaResponse, MeContextResponse, PlanningChecklistApiResponse } from './cycles.models';
 
 @Injectable({ providedIn: 'root' })
 export class GdrCronogramaApiService {
@@ -55,6 +55,12 @@ export class GdrCronogramaApiService {
   getPlanningChecklist(cycleId: number): Observable<PlanningChecklistApiResponse> {
     return this.http
       .get<ApiResponse<PlanningChecklistApiResponse>>(`${this.base}/admin/cycles/${cycleId}/planning-checklist`)
+      .pipe(map((r) => r.data));
+  }
+
+  getMeContext(cycleId: number): Observable<MeContextResponse> {
+    return this.http
+      .get<ApiResponse<MeContextResponse>>(`${this.base}/gdr/ciclo/${cycleId}/me/context`)
       .pipe(map((r) => r.data));
   }
 }

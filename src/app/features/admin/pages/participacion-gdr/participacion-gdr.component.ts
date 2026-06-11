@@ -619,7 +619,7 @@ type PersonRole = 'evaluator' | 'evaluated';
       align-items: center; color: #64748b; display: flex; flex-wrap: wrap;
       font-size: 0.82rem; gap: 8px;
     }
-    .breadcrumb a { color: #7f1714; font-weight: 700; text-decoration: none; }
+    .breadcrumb a { color: #0077A8; font-weight: 700; text-decoration: none; }
     .workspace__hero {
       align-items: flex-start; display: flex; gap: 16px; justify-content: space-between;
     }
@@ -627,7 +627,7 @@ type PersonRole = 'evaluator' | 'evaluated';
       align-items: center; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end;
     }
     .workspace__eyebrow, .panel__eyebrow {
-      color: #7f1714; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em;
+      color: #D96500; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em;
       margin: 0 0 6px; text-transform: uppercase;
     }
     .workspace__title { color: #0f172a; font-size: clamp(1.35rem, 2.4vw, 2rem); line-height: 1.15; margin: 0; }
@@ -638,7 +638,7 @@ type PersonRole = 'evaluator' | 'evaluated';
       display: inline-flex; font: inherit; font-size: 0.84rem; font-weight: 800;
       justify-content: center; min-height: 38px; padding: 9px 14px; text-decoration: none; white-space: nowrap;
     }
-    .button--primary { background: #7f1714; border-color: #7f1714; color: #ffffff; }
+    .button--primary { background: #0077A8; border-color: #0077A8; color: #ffffff; }
     .button--secondary { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .button--danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
     .button--compact { font-size: 0.78rem; min-height: 32px; padding: 7px 10px; }
@@ -685,7 +685,7 @@ type PersonRole = 'evaluator' | 'evaluated';
       background: transparent; border: none; border-bottom: 3px solid transparent; color: #64748b;
       cursor: pointer; font: inherit; font-size: 0.92rem; font-weight: 700; padding: 12px 14px;
     }
-    .tabs__item--active { border-color: #7f1714; color: #7f1714; }
+    .tabs__item--active { border-color: #0077A8; color: #0077A8; }
 
     .panel {
       background: #ffffff; border: 1px solid #dbe3ef; border-radius: 8px; padding: 18px 18px 4px;
@@ -716,7 +716,7 @@ type PersonRole = 'evaluator' | 'evaluated';
       padding: 32px;
     }
     .loading-spinner {
-      animation: spin 0.9s linear infinite; border: 3px solid #e2e8f0; border-top-color: #7f1714;
+      animation: spin 0.9s linear infinite; border: 3px solid #e2e8f0; border-top-color: #0077A8;
       border-radius: 50%; height: 22px; width: 22px;
     }
 
@@ -854,7 +854,7 @@ type PersonRole = 'evaluator' | 'evaluated';
     }
 
     .breadcrumb a {
-      color: #7f1d1d;
+      color: #0077A8;
       font-weight: 700;
     }
 
@@ -867,7 +867,7 @@ type PersonRole = 'evaluator' | 'evaluated';
 
     .workspace__eyebrow,
     .panel__eyebrow {
-      color: #7f1d1d;
+      color: #D96500;
       font-size: 0.72rem;
       font-weight: 800;
       letter-spacing: 0;
@@ -915,14 +915,14 @@ type PersonRole = 'evaluator' | 'evaluated';
     }
 
     .button--primary {
-      background: #8b1a16;
-      border-color: #8b1a16;
+      background: #0077A8;
+      border-color: #0077A8;
       color: #ffffff;
     }
 
     .button--primary:hover:not(:disabled) {
-      background: #721512;
-      border-color: #721512;
+      background: #005E8C;
+      border-color: #005E8C;
     }
 
     .button--secondary,
@@ -999,15 +999,15 @@ type PersonRole = 'evaluator' | 'evaluated';
     .form-field input:focus,
     .form-field select:focus,
     .form-field textarea:focus {
-      border-color: #8b1a16;
-      box-shadow: 0 0 0 3px rgba(139, 26, 22, 0.12);
+      border-color: #0077A8;
+      box-shadow: 0 0 0 3px rgba(0, 119, 168, 0.12);
       outline: none;
     }
 
     .help-banner {
       background: #ffffff;
       border: 1px solid #dbe3ef;
-      border-left: 4px solid #8b1a16;
+      border-left: 4px solid #0077A8;
       border-radius: 10px;
       color: #334155;
       padding: 15px 16px;
@@ -1026,7 +1026,7 @@ type PersonRole = 'evaluator' | 'evaluated';
     }
 
     .help-banner li::marker {
-      color: #8b1a16;
+      color: #D96500;
     }
 
     .tabs {
@@ -1044,12 +1044,12 @@ type PersonRole = 'evaluator' | 'evaluated';
     }
 
     .tabs__item:hover {
-      color: #8b1a16;
+      color: #0077A8;
     }
 
     .tabs__item--active {
-      border-bottom-color: #8b1a16;
-      color: #8b1a16;
+      border-bottom-color: #0077A8;
+      color: #0077A8;
     }
 
     .panel {
@@ -1249,16 +1249,16 @@ type PersonRole = 'evaluator' | 'evaluated';
     }
 
     .button--primary {
-      background: #7f1714;
-      border-color: #7f1714;
-      box-shadow: 0 1px 3px rgba(127, 23, 20, 0.2);
+      background: #0077A8;
+      border-color: #0077A8;
+      box-shadow: 0 1px 3px rgba(0, 119, 168, 0.2);
       color: #ffffff;
     }
 
     .button--primary:hover:not(:disabled) {
-      background: #951c18;
-      border-color: #951c18;
-      box-shadow: 0 2px 6px rgba(127, 23, 20, 0.25);
+      background: #005E8C;
+      border-color: #005E8C;
+      box-shadow: 0 2px 6px rgba(0, 119, 168, 0.25);
     }
 
     .button--secondary,
@@ -1295,7 +1295,7 @@ type PersonRole = 'evaluator' | 'evaluated';
     .button--danger:hover:not(:disabled) {
       background: #fef2f2;
       border-color: #ef9a9a;
-      color: #7f1d1d;
+      color: #991b1b;
     }
 
     .button:disabled {

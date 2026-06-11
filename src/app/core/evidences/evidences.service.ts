@@ -65,6 +65,9 @@ export class EvidencesService {
     if (payload.expectedDate) {
       formData.append('expectedDate', payload.expectedDate);
     }
+    if (payload.mandatory != null) {
+      formData.append('mandatory', String(payload.mandatory));
+    }
     if (file) {
       formData.append('archivo', file, file.name);
     }

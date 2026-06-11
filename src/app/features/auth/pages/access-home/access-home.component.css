@@ -30,7 +30,7 @@
   font-size: 0.7rem;
   letter-spacing: 0.12em;
   font-weight: 700;
-  color: #7f1714;
+  color: #D96500;
   text-transform: uppercase;
 }
 
@@ -105,14 +105,14 @@
 
 .ciclo-card:hover,
 .ciclo-card:focus-visible {
-  border-color: rgba(127, 23, 20, 0.25);
+  border-color: rgba(0, 119, 168, 0.25);
   box-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
   transform: translateY(-2px);
   outline: none;
 }
 
 .ciclo-card:focus-visible {
-  outline: 2px solid #7f1714;
+  outline: 2px solid #0077A8;
   outline-offset: 2px;
 }
 
@@ -167,8 +167,8 @@
 .ciclo-card__badge[data-estado="INACTIVE"] { background: #f1f5f9; color: #64748b; }
 
 .ciclo-card__badge--active {
-  background: rgba(127, 23, 20, 0.06);
-  color: #7f1714;
+  background: rgba(0, 119, 168, 0.06);
+  color: #0077A8;
 }
 
 .ciclo-card__name {
@@ -191,7 +191,7 @@
   margin-top: 6px;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #7f1714;
+  color: #0077A8;
   opacity: 0;
   transform: translateX(-4px);
   transition: opacity 0.18s ease, transform 0.18s ease;
@@ -231,12 +231,12 @@
 }
 
 .btn--primary {
-  background: #7f1714;
+  background: #0077A8;
   color: #fff;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: #6b1211;
+  background: #005E8C;
 }
 
 .btn--primary:disabled,
@@ -269,7 +269,7 @@
 }
 
 .module-card:hover {
-  border-color: rgba(127, 23, 20, 0.2);
+  border-color: rgba(0, 119, 168, 0.2);
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
   transform: translateY(-2px);
 }
@@ -300,8 +300,8 @@
 
 .module-card:hover .module-card__icon,
 .module-card:focus-visible .module-card__icon {
-  background: rgba(127, 23, 20, 0.08);
-  color: #7f1714;
+  background: rgba(0, 119, 168, 0.08);
+  color: #0077A8;
 }
 
 .module-card__eyebrow {
@@ -315,7 +315,7 @@
 
 .module-card:hover .module-card__eyebrow,
 .module-card:focus-visible .module-card__eyebrow {
-  color: #7f1714;
+  color: #0077A8;
 }
 
 .module-card__title {
@@ -347,7 +347,7 @@
 .module-card__arrow svg {
   width: 14px;
   height: 14px;
-  fill: #7f1714;
+  fill: #0077A8;
 }
 
 .module-card:hover .module-card__arrow {
@@ -356,7 +356,7 @@
 }
 
 .module-card:focus-visible {
-  outline: 2px solid #7f1714;
+  outline: 2px solid #0077A8;
   outline-offset: 2px;
 }
 
@@ -420,7 +420,7 @@
   width: 18px;
   height: 18px;
   border: 2px solid #e5e7eb;
-  border-top-color: #7f1714;
+  border-top-color: #0077A8;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -566,8 +566,8 @@
 
 .modal-field input:focus {
   outline: none;
-  border-color: #7f1714;
-  box-shadow: 0 0 0 3px rgba(127, 23, 20, 0.08);
+  border-color: #0077A8;
+  box-shadow: 0 0 0 3px rgba(0, 119, 168, 0.08);
 }
 
 .modal-form__actions {

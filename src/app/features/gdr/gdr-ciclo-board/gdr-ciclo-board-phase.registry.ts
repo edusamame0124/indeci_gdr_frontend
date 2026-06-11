@@ -87,8 +87,28 @@ const EVALUADOR_ACTORS: ActorFuncional[] = ['ORH', 'EVALUADOR', 'EVALUADOR_Y_EVA
 const REPORTES_ACTORS: ActorFuncional[] = [
   'ORH', 'JUNTA_DIRECTIVOS', 'TITULAR', 'AUDITOR', 'CONSULTA',
 ];
-const SIN_F9_F11: ActorFuncional[] = [
-  'ORH', 'EVALUADO', 'EVALUADOR_Y_EVALUADO', 'CONSULTA', 'TITULAR', 'AUDITOR',
+
+// B2 — Asignaciones: gestión ORH exclusivamente. EVALUADO no gestiona asignaciones.
+const ASIGNACIONES_ACTORS: ActorFuncional[] = ['ORH', 'TITULAR', 'AUDITOR', 'CONSULTA'];
+
+// B3 — Indicadores: EVALUADO no accede al catálogo institucional completo.
+const INDICADORES_ACTORS: ActorFuncional[] = [
+  'ORH', 'EVALUADOR', 'EVALUADOR_Y_EVALUADO', 'TITULAR', 'AUDITOR', 'CONSULTA',
+];
+
+// B1 — Oportunidades de mejora: EVALUADOR es responsable principal (RPE 076-2021 Art. 18-22).
+const OPORTUNIDADES_MEJORA_ACTORS: ActorFuncional[] = [
+  'ORH', 'EVALUADOR', 'EVALUADO', 'EVALUADOR_Y_EVALUADO', 'CONSULTA', 'TITULAR', 'AUDITOR',
+];
+
+// B1 — Documentos F11: EVALUADOR firma/visualiza documentos de sus evaluados (RPE 000041-2025/PE).
+const DOCUMENTOS_ACTORS: ActorFuncional[] = [
+  'ORH', 'EVALUADOR', 'EVALUADO', 'EVALUADOR_Y_EVALUADO', 'CONSULTA', 'TITULAR', 'AUDITOR',
+];
+
+// F16 — Formato GDR: actores operativos acceden a sus documentos del ciclo.
+const FORMATO_GDR_ACTORS: ActorFuncional[] = [
+  'ORH', 'EVALUADOR', 'EVALUADO', 'EVALUADOR_Y_EVALUADO',
 ];
 
 /**
@@ -134,7 +154,7 @@ export const GDR_BOARD_PHASE_REGISTRY: GdrBoardEntry[] = [
     description: 'Relaciones evaluador-evaluado dentro del alcance del ciclo.',
     normativaRef: 'RPE 068-2020 Art. 15-20',
     permissionKey: 'canViewAssignments',
-    showWhen: ALL_OPERATIONAL,
+    showWhen: ASIGNACIONES_ACTORS,
     macroFlow: 'planificacion',
     routeSegments: ['asignaciones'],
     isNavigable: true,
@@ -160,7 +180,7 @@ export const GDR_BOARD_PHASE_REGISTRY: GdrBoardEntry[] = [
     description: 'Catálogo de indicadores habilitados para este ciclo.',
     normativaRef: 'RPE 076-2021 Art. 8',
     permissionKey: 'canViewIndicators',
-    showWhen: ALL_OPERATIONAL,
+    showWhen: INDICADORES_ACTORS,
     macroFlow: 'planificacion',
     routeSegments: ['indicadores'],
     isNavigable: true,
@@ -227,7 +247,7 @@ export const GDR_BOARD_PHASE_REGISTRY: GdrBoardEntry[] = [
     description: 'Registro, seguimiento y cierre de compromisos de mejora.',
     normativaRef: 'RPE 076-2021 Art. 18-22',
     permissionKey: 'canViewImprovements',
-    showWhen: SIN_F9_F11,
+    showWhen: OPORTUNIDADES_MEJORA_ACTORS,
     macroFlow: 'seguimiento',
     routeSegments: ['oportunidades-mejora'],
     isNavigable: true,
@@ -255,7 +275,7 @@ export const GDR_BOARD_PHASE_REGISTRY: GdrBoardEntry[] = [
     description: 'Flujo documental y firma según el alcance autorizado.',
     normativaRef: 'RPE 000041-2025/PE',
     permissionKey: 'canViewDocuments',
-    showWhen: SIN_F9_F11,
+    showWhen: DOCUMENTOS_ACTORS,
     macroFlow: 'evaluacion',
     routeSegments: ['documentos'],
     isNavigable: true,
@@ -321,6 +341,19 @@ export const GDR_BOARD_PHASE_REGISTRY: GdrBoardEntry[] = [
   {
     phase: 16,
     block: 'F',
+    slug: 'formato-gdr',
+    title: 'Formato GDR — Documentos del ciclo',
+    description: 'Documentos firmados del ciclo accesibles según el actor funcional.',
+    normativaRef: 'RPE 000041-2025/PE',
+    permissionKey: 'canViewDocuments',
+    showWhen: FORMATO_GDR_ACTORS,
+    macroFlow: 'cierre',
+    routeSegments: ['documentos'],
+    isNavigable: true,
+  },
+  {
+    phase: 17,
+    block: 'F',
     slug: 'informe-cierre',
     title: 'Informe de cierre',
     description: 'Consolidación exportable. Plazo normativo: hasta el 31 de mayo.',
@@ -332,7 +365,7 @@ export const GDR_BOARD_PHASE_REGISTRY: GdrBoardEntry[] = [
     isNavigable: true,
   },
   {
-    phase: 17,
+    phase: 18,
     block: 'F',
     slug: 'reportes',
     title: 'Reportes del ciclo',

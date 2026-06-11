@@ -243,12 +243,12 @@
 }
 
 .btn--primary {
-  background: #0A2240;
+  background: #F58220;
   color: #fff;
 }
 
-.btn--primary:hover { background: #112d52; }
-.btn--primary:focus-visible { outline: 3px solid #1565C0; outline-offset: 2px; }
+.btn--primary:hover { background: #D96500; }
+.btn--primary:focus-visible { outline: 3px solid #F58220; outline-offset: 2px; }
 
 .btn--primary svg {
   width: 16px;

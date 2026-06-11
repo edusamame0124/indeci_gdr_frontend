@@ -2,7 +2,7 @@
 .workspace__container { max-width: 1200px; margin: 0 auto; }
 
 .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #64748b; margin-bottom: 20px; }
-.breadcrumb a { color: #7f1714; text-decoration: none; }
+.breadcrumb a { color: #0077A8; text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
 
 .workspace__title { font-size: 1.4rem; font-weight: 800; color: #1e293b; margin: 0 0 4px; }
@@ -27,9 +27,9 @@
   display: inline-flex; align-items: center; justify-content: center; min-height: 36px;
   padding: 0 14px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; cursor: pointer; font: inherit;
 }
-.btn-primary { border: none; background: #7f1714; color: #fff; }
+.btn-primary { border: none; background: #0077A8; color: #fff; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-secondary { border: 1px solid rgba(127,23,20,.2); background: rgba(127,23,20,.06); color: #7f1714; }
+.btn-secondary { border: 1px solid rgba(0,119,168,.2); background: rgba(0,119,168,.06); color: #0077A8; }
 .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .error-state {

@@ -27,7 +27,7 @@ function buildChecklist(ctx: CicloBoardContext | null): ChecklistItemUi[] {
       detail: 'Al menos 180 días entre inicio del ciclo y fin de la etapa Seguimiento.',
       normativaRef: 'RPE 068-2020 Art. 26',
       tipo: 'obligatorio',
-      status: c == null ? 'pending' : 'pending', // requiere datos de cronograma
+      status: c == null ? 'pending' : c.seguimientoMinimoSeisMeses ? 'passed' : 'failed',
     },
     {
       code: 'REQ-03',

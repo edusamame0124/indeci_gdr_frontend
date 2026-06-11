@@ -1,13 +1,51 @@
 :root {
-  --color-red: #c81f25;
-  --color-red-dark: #9f171c;
+  /* ── Paleta INDECI ──────────────────────────────────────────────── */
+  --indeci-blue-950: #052B45;
+  --indeci-blue-900: #073B5C;
+  --indeci-blue-800: #005E8C;
+  --indeci-blue-700: #0077A8;
+  --indeci-blue-600: #0B8FC8;
+  --indeci-blue-500: #18A8E0;
+  --indeci-blue-100: #E6F4FA;
+  --indeci-blue-050: #F2FAFD;
+
+  --indeci-orange-700: #D96500;
+  --indeci-orange-600: #F58220;
+  --indeci-orange-500: #FF922B;
+  --indeci-orange-100: #FFF1E5;
+  --indeci-orange-050: #FFF8F1;
+
+  /* ── Superficies y texto ──────────────────────────────────────── */
+  --surface-page: #F4F7FA;
+  --surface-card: #FFFFFF;
+  --surface-muted: #F8FAFC;
+  --border-soft: #DDE6EF;
+  --border-strong: #B8C7D6;
+  --text-primary: #0A2240;
+  --text-secondary: #425B76;
+  --text-muted: #71869D;
+  --text-inverse: #FFFFFF;
+
+  /* ── Estados semánticos ──────────────────────────────────────── */
+  --success-600: #168A4A;
+  --success-100: #E7F7EE;
+  --warning-600: #C77700;
+  --warning-100: #FFF4DB;
+  --danger-600: #B42318;
+  --danger-100: #FDE7E7;
+  --info-600: #0077A8;
+  --info-100: #E6F4FA;
+
+  /* ── Tokens legacy (compatibilidad) ─────────────────────────── */
+  --color-red: #B42318;
+  --color-red-dark: #8C1A11;
   --color-surface: rgba(255, 255, 255, 0.9);
   --color-surface-strong: #ffffff;
   --color-border: rgba(15, 23, 42, 0.12);
   --color-text: #162032;
   --color-muted: #5f6b7d;
-  --color-primary: #2b74c8;
-  --color-primary-dark: #1f5aa0;
+  --color-primary: #0077A8;
+  --color-primary-dark: #005E8C;
   --shadow-soft: 0 24px 60px rgba(15, 23, 42, 0.12);
   --font-base: "Segoe UI", Candara, "Trebuchet MS", sans-serif;
 }
@@ -23,8 +61,8 @@ body {
   font-family: var(--font-base);
   color: var(--color-text);
   background:
-    radial-gradient(circle at top, rgba(200, 31, 37, 0.08), transparent 28%),
-    linear-gradient(180deg, #f8fafc 0%, #eef3f8 100%);
+    radial-gradient(circle at top, rgba(0, 119, 168, 0.05), transparent 28%),
+    linear-gradient(180deg, #f4f7fa 0%, #eaf1f7 100%);
 }
 
 body,

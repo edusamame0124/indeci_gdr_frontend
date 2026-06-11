@@ -74,8 +74,20 @@ export class GdrCicloBoardComponent {
   readonly functionalActor = computed(() => this.ctx()?.functionalActor ?? '');
   readonly orgUnitName = computed(() => this.ctx()?.orgUnitName ?? '');
 
+  /** ACTOR_MIXTO: usuario con asignaciones como evaluador Y evaluado en el mismo ciclo. */
+  readonly esMixto = computed(() => this.functionalActor() === 'EVALUADOR_Y_EVALUADO');
+  readonly contextoMixto = signal<'MI_EVALUACION' | 'MIS_EVALUADOS'>('MIS_EVALUADOS');
+
+  /** Actor efectivo según el selector de contexto (sólo cambia para ACTOR_MIXTO). */
+  readonly actorEfectivo = computed((): string => {
+    if (this.esMixto()) {
+      return this.contextoMixto() === 'MI_EVALUACION' ? 'EVALUADO' : 'EVALUADOR';
+    }
+    return this.functionalActor();
+  });
+
   readonly bannerMessage = computed(() => {
-    const actor = this.functionalActor();
+    const actor = this.actorEfectivo();
     return actor ? GDR_BOARD_BANNER_MESSAGES[actor as keyof typeof GDR_BOARD_BANNER_MESSAGES] ?? null : null;
   });
 
@@ -83,7 +95,7 @@ export class GdrCicloBoardComponent {
   readonly resolvedCards = computed(() =>
     resolveGdrBoardCards(
       this.estadoEtapa(),
-      this.functionalActor(),
+      this.actorEfectivo(),
       this.fa(),
       this.boardContext(),
     )
@@ -108,7 +120,9 @@ export class GdrCicloBoardComponent {
   /** Mostrar bloque cumplimiento en EN_PLANIFICACION y también colapsado en etapas posteriores */
   readonly showCumplimientoBlock = computed(() => {
     const etapa = this.estadoEtapa();
-    return ['EN_PLANIFICACION', 'EN_SEGUIMIENTO', 'EN_EVALUACION'].includes(etapa);
+    const actor = this.actorEfectivo();
+    return ['EN_PLANIFICACION', 'EN_SEGUIMIENTO', 'EN_EVALUACION'].includes(etapa)
+      && actor !== 'EVALUADO';
   });
 
   /** ORH funcional puede avanzar a Seguimiento */
@@ -126,6 +140,10 @@ export class GdrCicloBoardComponent {
 
   closeModal(): void {
     this.showAvanzarModal.set(false);
+  }
+
+  setContexto(ctx: 'MI_EVALUACION' | 'MIS_EVALUADOS'): void {
+    this.contextoMixto.set(ctx);
   }
 
   constructor() {

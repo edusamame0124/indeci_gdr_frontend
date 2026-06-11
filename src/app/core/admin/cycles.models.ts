@@ -83,6 +83,7 @@ export interface CicloBoardContextApiResponse {
   planificacionCompletadaEn: string | null;
   planificacionCompletadaPor: string | null;
   cronogramaCompleto: boolean;
+  seguimientoMinimoSeisMeses: boolean;
   participantesRegistrados: boolean;
   asignacionesCompletas: boolean;
   cieAplica: boolean;
@@ -90,6 +91,20 @@ export interface CicloBoardContextApiResponse {
   indicadoresHabilitados: boolean;
   metasFormalizadas100: boolean;
   notificacionesTomaConocimiento: boolean;
+}
+
+/** Respuesta del endpoint GET /gdr/ciclo/{cycleId}/me/context */
+export interface MeContextResponse {
+  cycleId: number;
+  rolesTecnicos: string[];
+  actorFuncional: string;
+  esEvaluado: boolean;
+  esEvaluador: boolean;
+  esMixto: boolean;
+  personId: number | null;
+  personDisplayName: string | null;
+  evaluadosAsignados: number[];
+  contextos: string[];
 }
 
 /** Respuesta del endpoint GET /admin/cycles/{id}/planning-checklist */

@@ -11,7 +11,9 @@
 
     <div class="page__actions">
       <a [routerLink]="cicloNavService.boardRoute()" class="page__link page__link--ghost">Volver</a>
-      <button type="button" class="page__link" (click)="openCreateModal()">Nuevo indicador</button>
+      @if (canManage()) {
+        <button type="button" class="page__link" (click)="openCreateModal()">Nuevo indicador</button>
+      }
     </div>
   </div>
 
@@ -53,7 +55,9 @@
                 <td>{{ indicator.formulaName }}</td>
                 <td>{{ indicator.segmentName }}</td>
                 <td>
-                  <button type="button" class="inline-button" (click)="editIndicator(indicator)">Editar</button>
+                  @if (canManage()) {
+                    <button type="button" class="inline-button" (click)="editIndicator(indicator)">Editar</button>
+                  }
                 </td>
               </tr>
             } @empty {
@@ -93,9 +97,11 @@
               </div>
             </div>
 
+            @if (canManage()) {
             <button type="button" class="inline-button inline-button--full" (click)="editIndicator(indicator)">
               Editar
             </button>
+          }
           </article>
         } @empty {
           <div class="page__state">No hay indicadores registrados.</div>
@@ -104,7 +110,7 @@
     }
   </section>
 
-  @if (modalOpen()) {
+  @if (modalOpen() && canManage()) {
     <div class="modal-backdrop" (click)="closeModal()"></div>
 
     <section class="modal" role="dialog" aria-modal="true" aria-label="Formulario de indicador">

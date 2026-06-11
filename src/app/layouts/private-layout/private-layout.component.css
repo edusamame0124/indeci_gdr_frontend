@@ -17,8 +17,8 @@
   top: 0;
   z-index: 20;
   min-height: 60px;
-  background: #7f1714;
-  border-bottom: 1px solid rgba(89, 9, 9, 0.16);
+  background: linear-gradient(90deg, #052B45 0%, #0077A8 100%);
+  border-bottom: 1px solid rgba(0, 62, 112, 0.22);
   display: flex;
   align-items: center;
   justify-content: space-between;

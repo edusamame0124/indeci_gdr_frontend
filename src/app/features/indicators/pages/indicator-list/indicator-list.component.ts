@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CatalogItem } from '../../../../core/admin/catalogs.models';
@@ -7,6 +7,7 @@ import { Indicator, IndicatorUpsertRequest } from '../../../../core/indicators/i
 import { IndicatorsService } from '../../../../core/indicators/indicators.service';
 import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { CycleContextBarComponent } from '../../../../shared/ui/cycle-context-bar.component';
 
 @Component({
@@ -21,7 +22,11 @@ export class IndicatorListComponent {
   private readonly indicatorsService = inject(IndicatorsService);
   private readonly catalogsService = inject(CatalogsService);
   private readonly toastService = inject(UiToastService);
+  private readonly authService = inject(AuthService);
   readonly cicloNavService = inject(CicloNavService);
+
+  /** Solo ORH/ADMIN puede crear y editar indicadores (RPE 068-2020-SERVIR-PE Fase 5). */
+  readonly canManage = computed(() => this.authService.featureAccess()?.canManageIndicators ?? false);
 
   readonly indicators = signal<Indicator[]>([]);
   readonly valueTypes = signal<CatalogItem[]>([]);

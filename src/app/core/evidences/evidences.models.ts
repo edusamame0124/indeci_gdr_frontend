@@ -16,6 +16,7 @@ export interface EvidenceSummary {
   latestReviewComment: string | null;
   latestReviewQualificationCode?: string | null;
   latestReviewQualificationName?: string | null;
+  mandatory: boolean;
 }
 
 export interface EvidenceReview {
@@ -52,6 +53,7 @@ export interface EvidenceDetail {
   openCorrectiveActionDetail: string | null;
   openCorrectiveActionStatus: string | null;
   reviews: EvidenceReview[];
+  mandatory: boolean;
 }
 
 export interface EvidenceUpsertRequest {
@@ -60,6 +62,7 @@ export interface EvidenceUpsertRequest {
   evidenceTypeCode: string;
   expectedFormatCode: string;
   expectedDate: string | null;
+  mandatory: boolean | null;
 }
 
 export interface EvidenceReviewRequest {

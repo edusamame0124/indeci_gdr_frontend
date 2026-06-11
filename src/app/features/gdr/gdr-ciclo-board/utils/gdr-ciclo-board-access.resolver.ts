@@ -16,6 +16,7 @@ export interface CicloBoardContext {
   planificacionCompletadaPor: string | null;
   // checklist flags (del endpoint /planning-checklist)
   cronogramaCompleto: boolean;
+  seguimientoMinimoSeisMeses: boolean;
   participantesRegistrados: boolean;
   asignacionesCompletas: boolean;
   cieAplica: boolean;
@@ -55,6 +56,7 @@ const STATE_TABLE: Partial<Record<EstadoCiclo, SlugStateMap>> = {
     'cie-casos': 'BLOQUEADO',
     'distinguidos-candidatos': 'BLOQUEADO',
     'distinguidos-asignacion': 'BLOQUEADO',
+    'formato-gdr': 'BLOQUEADO',
     'informe-cierre': 'BLOQUEADO',
     'reportes': 'DISPONIBLE',
     'auditoria': 'DISPONIBLE',
@@ -76,6 +78,7 @@ const STATE_TABLE: Partial<Record<EstadoCiclo, SlugStateMap>> = {
     'cie-casos': 'BLOQUEADO',
     'distinguidos-candidatos': 'BLOQUEADO',
     'distinguidos-asignacion': 'BLOQUEADO',
+    'formato-gdr': 'BLOQUEADO',
     'informe-cierre': 'BLOQUEADO',
     'reportes': 'DISPONIBLE',
     'auditoria': 'DISPONIBLE',
@@ -97,6 +100,7 @@ const STATE_TABLE: Partial<Record<EstadoCiclo, SlugStateMap>> = {
     'cie-casos': 'PENDIENTE_REQUISITOS',
     'distinguidos-candidatos': 'BLOQUEADO',
     'distinguidos-asignacion': 'BLOQUEADO',
+    'formato-gdr': 'ACTIVO',
     'informe-cierre': 'BLOQUEADO',
     'reportes': 'DISPONIBLE',
     'auditoria': 'DISPONIBLE',
@@ -118,6 +122,7 @@ const STATE_TABLE: Partial<Record<EstadoCiclo, SlugStateMap>> = {
     'cie-casos': 'ACTIVO',
     'distinguidos-candidatos': 'BLOQUEADO',
     'distinguidos-asignacion': 'BLOQUEADO',
+    'formato-gdr': 'ACTIVO',
     'informe-cierre': 'BLOQUEADO',
     'reportes': 'DISPONIBLE',
     'auditoria': 'DISPONIBLE',
@@ -139,6 +144,7 @@ const STATE_TABLE: Partial<Record<EstadoCiclo, SlugStateMap>> = {
     'cie-casos': 'SOLO_LECTURA',
     'distinguidos-candidatos': 'ACTIVO',
     'distinguidos-asignacion': 'ACTIVO',
+    'formato-gdr': 'ACTIVO',
     'informe-cierre': 'DISPONIBLE',
     'reportes': 'DISPONIBLE',
     'auditoria': 'DISPONIBLE',
@@ -160,6 +166,7 @@ const STATE_TABLE: Partial<Record<EstadoCiclo, SlugStateMap>> = {
     'cie-casos': 'SOLO_LECTURA',
     'distinguidos-candidatos': 'SOLO_LECTURA',
     'distinguidos-asignacion': 'SOLO_LECTURA',
+    'formato-gdr': 'ACTIVO',
     'informe-cierre': 'ACTIVO',
     'reportes': 'SOLO_LECTURA',
     'auditoria': 'SOLO_LECTURA',
@@ -181,6 +188,7 @@ const STATE_TABLE: Partial<Record<EstadoCiclo, SlugStateMap>> = {
     'cie-casos': 'BLOQUEADO',
     'distinguidos-candidatos': 'BLOQUEADO',
     'distinguidos-asignacion': 'BLOQUEADO',
+    'formato-gdr': 'BLOQUEADO',
     'informe-cierre': 'BLOQUEADO',
     'reportes': 'DISPONIBLE',
     'auditoria': 'DISPONIBLE',

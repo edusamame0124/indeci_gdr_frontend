@@ -2,7 +2,7 @@
 .workspace__container { max-width: 1100px; margin: 0 auto; }
 
 .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #64748b; margin-bottom: 20px; }
-.breadcrumb a { color: #7f1714; text-decoration: none; }
+.breadcrumb a { color: #0077A8; text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
 
 .workspace__hero { margin-bottom: 20px; }
@@ -39,7 +39,7 @@
   display: flex; flex-direction: column; gap: 4px;
 }
 .stat-card__label { font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em; }
-.stat-card__value { font-size: 1.2rem; font-weight: 800; color: #7f1714; }
+.stat-card__value { font-size: 1.2rem; font-weight: 800; color: #0077A8; }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .field span { font-size: 0.8rem; font-weight: 600; color: #475569; }
@@ -54,9 +54,9 @@
   display: inline-flex; align-items: center; justify-content: center; min-height: 36px;
   padding: 0 14px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; cursor: pointer; font: inherit;
 }
-.btn-primary { border: none; background: #7f1714; color: #fff; }
+.btn-primary { border: none; background: #0077A8; color: #fff; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-secondary { border: 1px solid rgba(127,23,20,.2); background: rgba(127,23,20,.06); color: #7f1714; margin-right: 6px; }
+.btn-secondary { border: 1px solid rgba(0,119,168,.2); background: rgba(0,119,168,.06); color: #0077A8; margin-right: 6px; }
 .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .historial-panel__empty { color: #94a3b8; font-size: 0.84rem; margin: 0; }
@@ -64,6 +64,6 @@
 table { width: 100%; border-collapse: collapse; min-width: 640px; }
 th, td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 0.82rem; color: #334155; }
 th { color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.68rem; }
-.historial-row--activa { background: rgba(127,23,20,.04); }
+.historial-row--activa { background: rgba(0,119,168,.04); }
 .acciones { display: flex; flex-wrap: wrap; gap: 4px; }
 .download-error { margin-top: 10px; color: #b91c1c; font-size: 0.84rem; }
