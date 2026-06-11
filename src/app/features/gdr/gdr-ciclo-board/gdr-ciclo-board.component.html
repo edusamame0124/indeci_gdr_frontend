@@ -1,0 +1,145 @@
+<section class="board">
+  <div class="board__container">
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Ruta de navegación">
+      <a routerLink="/dashboard" class="breadcrumb__link">Dashboard GDR</a>
+      <span class="breadcrumb__sep" aria-hidden="true">/</span>
+      <span class="breadcrumb__current">
+        @if (loading() && !cicloDetail()) { Cargando... } @else { {{ cycleName() }} }
+      </span>
+    </nav>
+
+    <!-- Context bar -->
+    <app-cycle-context-bar />
+
+    <!-- Aviso: ciclo histórico -->
+    @if (!isActiveCycle()) {
+      <div class="board__notice board__notice--info" role="status">
+        <svg class="board__notice-icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 2a8 8 0 1 0 0 16A8 8 0 0 0 10 2Zm0 12a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm1-4.5H9V6h2v3.5Z"/>
+        </svg>
+        <span>
+          <strong>Ciclo histórico</strong> — Está navegando un ciclo que no es el activo del sistema.
+          Para operar, regrese al <a routerLink="/dashboard">selector de ciclos</a>.
+        </span>
+      </div>
+    }
+
+    <!-- Hero -->
+    <header class="board__hero">
+      <div class="board__hero-body">
+        <p class="board__eyebrow">Gestión del Rendimiento — Ciclo seleccionado</p>
+        <h1 class="board__title">
+          @if (loading() && !cicloDetail()) { Cargando ciclo... } @else { {{ cycleName() }} }
+        </h1>
+        @if (cicloDetail()) {
+          <p class="board__subtitle">
+            {{ cycleCode() }}
+            @if (cicloDetail()!.startDate) { &nbsp;·&nbsp; Inicio: {{ cicloDetail()!.startDate | date:'dd/MM/yyyy' }} }
+            @if (cicloDetail()!.endDate) { &nbsp;·&nbsp; Fin: {{ cicloDetail()!.endDate | date:'dd/MM/yyyy' }} }
+          </p>
+        }
+      </div>
+      @if (error()) {
+        <button type="button" class="btn btn--ghost" (click)="reload()">Reintentar</button>
+      }
+    </header>
+
+    <!-- Error no crítico -->
+    @if (error()) {
+      <div class="board__notice board__notice--warn" role="alert">
+        <svg class="board__notice-icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+        </svg>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    <!-- MacroFlowBar (solo cuando hay etapa definida) -->
+    @if (showMacroFlow()) {
+      <app-gdr-macro-flow-bar [estadoEtapa]="estadoEtapa()" />
+    }
+
+    <!-- Banner actor funcional -->
+    @if (bannerMessage()) {
+      <div class="board__actor-banner" role="note">
+        <span class="board__actor-label">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 0a4 4 0 1 1 0 8A4 4 0 0 1 8 0Zm0 9c-4 0-6 2-6 3v1h12v-1c0-1-2-3-6-3Z"/>
+          </svg>
+          {{ functionalActor() }}
+        </span>
+        {{ bannerMessage() }}
+      </div>
+    }
+
+    <!-- Bloque cumplimiento planificación (D-01: operativo solo EN_PLANIFICACION) -->
+    @if (showCumplimientoBlock()) {
+      <app-planificacion-cumplimiento-block
+        [estadoEtapa]="estadoEtapa()"
+        [boardContext]="boardContext()"
+        [canAdvance]="canAdvanceToSeguimiento()"
+        (avanzarClick)="onAvanzarClick()"
+      />
+    }
+
+    <!-- Modal avanzar a Seguimiento -->
+    @if (showAvanzarModal()) {
+      <div class="board__modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-avanzar-title">
+        <div class="board__modal">
+          <h2 id="modal-avanzar-title" class="board__modal-title">Avanzar a Seguimiento</h2>
+          <p class="board__modal-body">
+            ¿Confirma que desea avanzar el ciclo <strong>{{ cycleName() }}</strong> a la etapa de <strong>Seguimiento</strong>?
+            Esta acción quedará registrada en el log de auditoría y no podrá revertirse sin permiso excepcional.
+          </p>
+          <div class="board__modal-actions">
+            <button type="button" class="btn btn--ghost" (click)="closeModal()">Cancelar</button>
+            <button type="button" class="btn btn--danger" (click)="closeModal()">
+              Confirmar avance
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Módulos data-driven por bloque -->
+    @if (fa()) {
+      @if (hasCards()) {
+
+        @for (group of blockGroups(); track group.block) {
+          <section class="board__block" [attr.aria-labelledby]="'block-' + group.block + '-title'">
+            <header class="board__block-header">
+              <span class="board__block-tag">Bloque {{ group.block }}</span>
+              <h2 id="block-{{ group.block }}-title" class="board__block-title">{{ group.label }}</h2>
+            </header>
+            <div class="board__block-cards">
+              @for (card of group.cards; track card.entry.slug) {
+                @if (card.state !== 'NO_APLICA') {
+                  <app-gdr-ciclo-board-card [resolved]="card" />
+                }
+              }
+            </div>
+          </section>
+        }
+
+      } @else {
+        <!-- SIN_ROL_FUNCIONAL_GDR o sin permisos -->
+        <div class="board__empty">
+          <svg class="board__empty-icon" viewBox="0 0 40 40" aria-hidden="true">
+            <circle cx="20" cy="20" r="19" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1.5"/>
+            <path d="M20 10a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 12c-5 0-8 2.5-8 4v1.5h16V26c0-1.5-3-4-8-4Z" fill="#94a3b8"/>
+          </svg>
+          <strong>No tiene módulos GDR operativos habilitados para este ciclo.</strong>
+          <span>Verifique su vínculo con persona HR, rol técnico y asignaciones del ciclo activo.</span>
+        </div>
+      }
+    } @else {
+      <div class="board__loading" aria-live="polite">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <span>Cargando módulos del ciclo...</span>
+      </div>
+    }
+
+  </div>
+</section>

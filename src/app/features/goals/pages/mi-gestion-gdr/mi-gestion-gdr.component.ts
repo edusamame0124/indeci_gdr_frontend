@@ -11,6 +11,7 @@ import {
   GoalSummary
 } from '../../../../core/goals/goals.models';
 import { GoalsService } from '../../../../core/goals/goals.service';
+import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
 
 @Component({
   selector: 'app-mi-gestion-gdr',
@@ -20,7 +21,7 @@ import { GoalsService } from '../../../../core/goals/goals.service';
     <section class="workspace">
       <div class="workspace__container">
         <nav class="breadcrumb" aria-label="Ruta de navegacion">
-          <a routerLink="/dashboard">Dashboard</a>
+          <a [routerLink]="cicloNavService.boardRoute()">{{ cicloNavService.boardLabel() }}</a>
           <span>/</span>
           <span>Mi gestion GDR</span>
         </nav>
@@ -34,7 +35,7 @@ import { GoalsService } from '../../../../core/goals/goals.service';
             </p>
           </div>
 
-          <a routerLink="/dashboard" class="button button--secondary">Volver al dashboard</a>
+          <a [routerLink]="cicloNavService.boardRoute()" class="button button--secondary">Volver al dashboard</a>
         </header>
 
         @if (errorMessage()) {
@@ -121,7 +122,7 @@ import { GoalsService } from '../../../../core/goals/goals.service';
                         <div class="actions-cell">
                           <a
                             class="button button--primary button--compact"
-                            [routerLink]="['/dashboard/metas', goal.id, 'evidencias']"
+                            [routerLink]="cicloNavService.moduleRoute('metas', goal.id, 'evidencias')"
                           >
                             Gestionar evidencias
                           </a>
@@ -132,13 +133,13 @@ import { GoalsService } from '../../../../core/goals/goals.service';
                               <div class="actions-menu__panel">
                                 @if (evaluatedIdFor(goal); as evaluatedId) {
                                   @if (canViewFinalEvaluations()) {
-                                    <a [routerLink]="['/dashboard/evaluacion-final', evaluatedId]">
+                                    <a [routerLink]="cicloNavService.moduleRoute('evaluacion-final', evaluatedId)">
                                       Ver evaluacion
                                     </a>
                                   }
                                   @if (canViewDocuments()) {
                                     <a
-                                      routerLink="/dashboard/documentos"
+                                      [routerLink]="cicloNavService.moduleRoute('documentos')"
                                       [queryParams]="{ evaluatedId: evaluatedId }"
                                     >
                                       Documentos
@@ -146,7 +147,7 @@ import { GoalsService } from '../../../../core/goals/goals.service';
                                   }
                                   @if (canViewImprovements()) {
                                     <a
-                                      routerLink="/dashboard/oportunidades-mejora"
+                                      [routerLink]="cicloNavService.moduleRoute('oportunidades-mejora')"
                                       [queryParams]="{ evaluatedId: evaluatedId }"
                                     >
                                       Oportunidades
@@ -219,7 +220,7 @@ import { GoalsService } from '../../../../core/goals/goals.service';
                   <div class="goal-card__actions">
                     <a
                       class="button button--primary"
-                      [routerLink]="['/dashboard/metas', goal.id, 'evidencias']"
+                      [routerLink]="cicloNavService.moduleRoute('metas', goal.id, 'evidencias')"
                     >
                       Gestionar evidencias
                     </a>
@@ -230,13 +231,13 @@ import { GoalsService } from '../../../../core/goals/goals.service';
                         <div class="actions-menu__panel">
                           @if (evaluatedIdFor(goal); as evaluatedId) {
                             @if (canViewFinalEvaluations()) {
-                              <a [routerLink]="['/dashboard/evaluacion-final', evaluatedId]">
+                              <a [routerLink]="cicloNavService.moduleRoute('evaluacion-final', evaluatedId)">
                                 Ver evaluacion
                               </a>
                             }
                             @if (canViewDocuments()) {
                               <a
-                                routerLink="/dashboard/documentos"
+                                [routerLink]="cicloNavService.moduleRoute('documentos')"
                                 [queryParams]="{ evaluatedId: evaluatedId }"
                               >
                                 Documentos
@@ -244,7 +245,7 @@ import { GoalsService } from '../../../../core/goals/goals.service';
                             }
                             @if (canViewImprovements()) {
                               <a
-                                routerLink="/dashboard/oportunidades-mejora"
+                                [routerLink]="cicloNavService.moduleRoute('oportunidades-mejora')"
                                 [queryParams]="{ evaluatedId: evaluatedId }"
                               >
                                 Oportunidades
@@ -1240,6 +1241,7 @@ export class MiGestionGdrComponent {
   private readonly authService = inject(AuthService);
   private readonly finalEvaluationService = inject(FinalEvaluationService);
   private readonly goalsService = inject(GoalsService);
+  readonly cicloNavService = inject(CicloNavService);
 
   protected readonly profile = signal<UserSessionResponse | null>(null);
   protected readonly goals = signal<GoalSummary[]>([]);
@@ -1524,7 +1526,7 @@ export class MiGestionGdrComponent {
 
   private loadGoals(): void {
     this.goalsService
-      .listGoals()
+      .listGoals(this.cicloNavService.cicloId()!)
       .pipe(finalize(() => this.loadingGoals.set(false)))
       .subscribe({
         next: (goals) => {
@@ -1551,7 +1553,7 @@ export class MiGestionGdrComponent {
     this.evaluationLookupLoading.set(true);
 
     this.finalEvaluationService
-      .listFinalEvaluations()
+      .listFinalEvaluations(this.cicloNavService.cicloId()!)
       .pipe(finalize(() => this.evaluationLookupLoading.set(false)))
       .subscribe({
         next: (evaluations) => {

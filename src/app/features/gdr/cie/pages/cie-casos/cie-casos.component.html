@@ -1,0 +1,268 @@
+<section class="workspace">
+  <div class="workspace__container">
+    <nav class="breadcrumb">
+      <a [routerLink]="cicloNavService.boardRoute()">{{ cicloNavService.boardLabel() }}</a>
+      <span>/</span>
+      <span>Bandeja CIE</span>
+    </nav>
+
+    <header class="workspace__hero">
+      <div>
+        <h1 class="workspace__title">Comité Institucional de Evaluación</h1>
+        <p class="workspace__subtitle">
+          Casos derivados por solicitud de confirmación de calificación.
+          Plazo de convocatoria: 3 días hábiles desde la recepción (RPE 068-2020 Art. 44).
+        </p>
+      </div>
+      @if (pendientes() > 0) {
+        <span class="hero-badge">{{ pendientes() }} pendiente{{ pendientes() === 1 ? '' : 's' }}</span>
+      }
+    </header>
+
+    <app-cycle-context-bar />
+
+    @if (loading()) {
+      <div class="loading-state">Cargando bandeja...</div>
+    } @else if (error()) {
+      <div class="error-state">
+        <p>{{ error() }}</p>
+        <button type="button" class="btn btn--secondary" (click)="cargar()">Reintentar</button>
+      </div>
+    } @else {
+      <div class="bandeja-layout">
+        <div class="bandeja-lista">
+          <h2 class="bandeja-lista__title">Casos recibidos</h2>
+          @for (caso of casos(); track caso.id) {
+            <button
+              type="button"
+              class="caso-card"
+              [class.caso-card--activo]="casoSeleccionado()?.id === caso.id"
+              (click)="seleccionar(caso)"
+            >
+              <div class="caso-card__cabecera">
+                <strong class="caso-card__numero">{{ caso.numeroCaso }}</strong>
+                <span class="badge badge--estado" [attr.data-estado]="caso.estado">{{ caso.estadoLabel }}</span>
+              </div>
+              <div class="caso-card__evaluado">{{ caso.evaluadoNombre }}</div>
+              <div class="caso-card__meta">
+                <span>{{ caso.fechaIngresoCie | date:'dd/MM/yyyy HH:mm' }}</span>
+                @if (caso.estado === 'RECIBIDO' && caso.plazoConvocatoria) {
+                  @if (caso.convocatoriaVencida) {
+                    <span class="plazo-badge plazo-badge--bad">Convocatoria vencida</span>
+                  } @else if (caso.diasHabilesRestantesConvocatoria === 1) {
+                    <span class="plazo-badge plazo-badge--warn">Último día hábil</span>
+                  } @else if (caso.diasHabilesRestantesConvocatoria != null) {
+                    <span class="plazo-badge plazo-badge--ok">
+                      {{ caso.diasHabilesRestantesConvocatoria }} días hábiles
+                    </span>
+                  }
+                }
+              </div>
+            </button>
+          } @empty {
+            <div class="bandeja-lista__empty">
+              No hay casos derivados al CIE en el ciclo activo.
+            </div>
+          }
+        </div>
+
+        @if (casoSeleccionado(); as c) {
+          <div class="caso-detalle">
+            <h2 class="caso-detalle__title">Detalle del caso {{ c.numeroCaso }}</h2>
+
+            <div class="detalle-grid">
+              <div class="detalle-item">
+                <span class="detalle-item__label">Evaluado</span>
+                <span class="detalle-item__value">{{ c.evaluadoNombre }}</span>
+              </div>
+              <div class="detalle-item">
+                <span class="detalle-item__label">Evaluador</span>
+                <span class="detalle-item__value">{{ c.evaluadorNombre }}</span>
+              </div>
+              <div class="detalle-item">
+                <span class="detalle-item__label">Ciclo</span>
+                <span class="detalle-item__value">{{ c.cicloNombre }}</span>
+              </div>
+              <div class="detalle-item">
+                <span class="detalle-item__label">Calificación actual</span>
+                <span class="detalle-item__value">
+                  {{ c.calificacionActualLabel ?? 'Sin registrar' }}
+                  @if (c.puntajeActual != null) {
+                    <span class="detalle-item__sub">({{ c.puntajeActual }} pts.)</span>
+                  }
+                </span>
+              </div>
+            </div>
+
+            <div class="sustento-box">
+              <h3 class="sustento-box__title">Sustento del evaluado</h3>
+              <p class="sustento-box__texto">{{ c.sustentoEvaluado }}</p>
+            </div>
+
+            @if (c.estado === 'RECIBIDO' && c.plazoConvocatoria) {
+              <div
+                class="plazo-panel"
+                [class.plazo-panel--vencido]="c.convocatoriaVencida"
+                [class.plazo-panel--ultimo]="!c.convocatoriaVencida && c.diasHabilesRestantesConvocatoria === 1"
+              >
+                <strong>Plazo de convocatoria:</strong>
+                hasta el {{ c.plazoConvocatoria | date:'dd/MM/yyyy' }}
+                @if (c.convocatoriaVencida) {
+                  <span> — vencido. Registre la decisión a la brevedad.</span>
+                } @else if (c.diasHabilesRestantesConvocatoria != null) {
+                  <span> — {{ c.diasHabilesRestantesConvocatoria }} día(s) hábil(es) restante(s).</span>
+                }
+              </div>
+            }
+
+            @if (c.estado === 'RESUELTO') {
+              <div class="decision-box" [class.decision-box--modifica]="c.decision === 'MODIFICA'">
+                <strong class="decision-box__titulo">
+                  Decisión registrada:
+                  {{ c.decision === 'CONFIRMA' ? 'Se confirma la calificación' : 'Se modifica la calificación' }}
+                </strong>
+                @if (c.decision === 'MODIFICA' && c.calificacionResultadoLabel) {
+                  <p class="decision-box__linea">Nueva calificación: <strong>{{ c.calificacionResultadoLabel }}</strong></p>
+                }
+                @if (c.sustentoCie) {
+                  <p class="decision-box__linea">Sustento del CIE: {{ c.sustentoCie }}</p>
+                }
+                @if (c.fechaDecision) {
+                  <p class="decision-box__linea">Fecha: {{ c.fechaDecision | date:'dd/MM/yyyy HH:mm' }}</p>
+                }
+                <p class="decision-box__nota">La decisión del CIE es definitiva (RPE 068-2020 Art. 42).</p>
+                <div class="acta-download" role="group" [attr.aria-label]="'Descarga de acta del caso ' + c.numeroCaso">
+                  @if (downloadError()) {
+                    <div class="alerta alerta--error alerta--acta" role="alert" aria-live="polite">
+                      {{ downloadError() }}
+                    </div>
+                  }
+                  <button
+                    type="button"
+                    class="btn btn--secondary btn--acta"
+                    (click)="descargarActa(c)"
+                    [disabled]="descargandoActa()"
+                    [attr.aria-busy]="descargandoActa()"
+                    [attr.aria-label]="descargandoActa()
+                      ? 'Generando acta del CIE en PDF'
+                      : 'Descargar acta del CIE en PDF para el caso ' + c.numeroCaso"
+                  >
+                    @if (descargandoActa()) {
+                      Generando acta...
+                    } @else {
+                      Descargar acta CIE (PDF)
+                    }
+                  </button>
+                </div>
+              </div>
+            } @else if (canResolver()) {
+              <div class="form-section">
+                <h3 class="form-section__title">Registrar decisión del CIE</h3>
+                <p class="form-section__ayuda">
+                  Seleccione si confirma la calificación otorgada o la modifica.
+                  La decisión es definitiva y no podrá revertirse.
+                </p>
+
+                @if (formError()) {
+                  <div class="alerta alerta--error">{{ formError() }}</div>
+                }
+
+                <fieldset class="decision-opciones">
+                  <legend class="decision-opciones__legend">Decisión</legend>
+                  <label class="decision-opcion">
+                    <input
+                      type="radio"
+                      name="decision"
+                      value="CONFIRMA"
+                      [checked]="form().decision === 'CONFIRMA'"
+                      (change)="onFormField('decision', 'CONFIRMA')"
+                      [disabled]="confirmandoDecision() || resolviendo()"
+                    />
+                    Confirmar la calificación otorgada
+                  </label>
+                  <label class="decision-opcion">
+                    <input
+                      type="radio"
+                      name="decision"
+                      value="MODIFICA"
+                      [checked]="form().decision === 'MODIFICA'"
+                      (change)="onFormField('decision', 'MODIFICA')"
+                      [disabled]="confirmandoDecision() || resolviendo()"
+                    />
+                    Modificar la calificación
+                  </label>
+                </fieldset>
+
+                @if (form().decision === 'MODIFICA') {
+                  <label class="campo">
+                    Nueva calificación
+                    <select
+                      [value]="form().calificacionResultado"
+                      (change)="onFormField('calificacionResultado', $any($event.target).value)"
+                      [disabled]="confirmandoDecision() || resolviendo()"
+                    >
+                      <option value="">Seleccione...</option>
+                      @for (cal of calificaciones; track cal.code) {
+                        <option [value]="cal.code">{{ cal.label }}</option>
+                      }
+                    </select>
+                  </label>
+                }
+
+                <label class="campo">
+                  Sustento de la decisión
+                  <textarea
+                    rows="5"
+                    [value]="form().sustentoCie"
+                    (input)="onFormField('sustentoCie', $any($event.target).value)"
+                    [attr.maxlength]="sustentoMax"
+                    [disabled]="confirmandoDecision() || resolviendo()"
+                    placeholder="Fundamente la decisión del Comité Institucional de Evaluación..."
+                  ></textarea>
+                  <span class="campo__contador">{{ form().sustentoCie.length }} / {{ sustentoMax }}</span>
+                </label>
+
+                @if (!confirmandoDecision()) {
+                  <div class="form-actions">
+                    <button type="button" class="btn btn--primary" (click)="iniciarDecision()">
+                      Registrar decisión
+                    </button>
+                  </div>
+                } @else {
+                  <div class="confirmacion-inline" role="alertdialog" aria-label="Confirmar decisión del CIE">
+                    <p class="confirmacion-inline__texto">
+                      ¿Confirma la decisión del CIE? Una vez registrada es definitiva
+                      y no podrá modificarse (RPE 068-2020 Art. 42).
+                    </p>
+                    <div class="confirmacion-inline__acciones">
+                      <button
+                        type="button"
+                        class="btn btn--primary"
+                        [disabled]="resolviendo()"
+                        (click)="resolverCaso()"
+                      >
+                        {{ resolviendo() ? 'Registrando...' : 'Sí, registrar decisión' }}
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn--secondary"
+                        [disabled]="resolviendo()"
+                        (click)="cancelarDecision()"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="caso-detalle caso-detalle--vacio">
+            <p>Seleccione un caso de la bandeja para ver el detalle y registrar la decisión.</p>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</section>

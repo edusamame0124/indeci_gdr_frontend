@@ -1,0 +1,164 @@
+<section class="workspace">
+  <div class="workspace__container">
+    <nav class="breadcrumb">
+      <a [routerLink]="cicloNavService.boardRoute()">{{ cicloNavService.boardLabel() }}</a>
+      <span>/</span>
+      <span>Seguimiento periódico GDR</span>
+    </nav>
+
+    <header class="workspace__hero">
+      <div>
+        <h1 class="workspace__title">Seguimiento periódico</h1>
+        <p class="workspace__subtitle">
+          Registro de reuniones y compromisos durante el período de seguimiento.
+          Mínimo normativo: 6 meses (RPE 068-2020 Art. 26-32).
+        </p>
+      </div>
+    </header>
+
+
+    <app-cycle-context-bar />
+
+    @if (loading()) {
+      <div class="loading-state">Cargando...</div>
+    } @else if (error()) {
+      <div class="error-state">
+        <p>{{ error() }}</p>
+        <button type="button" class="btn btn--secondary" (click)="cargar()">Reintentar</button>
+      </div>
+    } @else if (resumen()) {
+
+      @if (resumen()!.alertaVAL01) {
+        <div class="alerta alerta--warning">
+          <strong>Alerta VAL-01:</strong> {{ resumen()!.alertaVAL01 }}
+        </div>
+      } @else {
+        <div class="alerta alerta--ok">
+          Seguimiento de {{ resumen()!.diasSeguimiento }} días. Cumple el mínimo normativo de 6 meses.
+        </div>
+      }
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-card__value">{{ resumen()!.totalReuniones }}</span>
+          <span class="stat-card__label">Reuniones registradas</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__value">{{ resumen()!.diasSeguimiento }}</span>
+          <span class="stat-card__label">Días de seguimiento</span>
+        </div>
+        <div
+          class="stat-card"
+          [class.stat-card--ok]="resumen()!.cumpleMinimo6Meses"
+          [class.stat-card--warn]="!resumen()!.cumpleMinimo6Meses"
+        >
+          <span class="stat-card__value">{{ resumen()!.cumpleMinimo6Meses ? '✓' : '✗' }}</span>
+          <span class="stat-card__label">Mínimo 6 meses</span>
+        </div>
+      </div>
+
+      @if (canRegistrar()) {
+        <div class="form-section">
+          <h3 class="form-section__title">Registrar nueva reunión</h3>
+          @if (formError()) {
+            <div class="alerta alerta--error">{{ formError() }}</div>
+          }
+          <form (submit)="registrar($event)" class="reunion-form">
+            <div class="form-row">
+              <label>
+                Tipo de reunión
+                <select
+                  [value]="form().tipoReunion"
+                  (change)="onFormField('tipoReunion', $any($event.target).value)"
+                >
+                  <option value="SEGUIMIENTO_PERIODICO">Seguimiento periódico</option>
+                  <option value="RETROALIMENTACION_PERIODICA">Retroalimentación periódica</option>
+                </select>
+              </label>
+              <label>
+                Fecha de reunión
+                <input
+                  type="date"
+                  [value]="form().fechaReunion"
+                  [max]="hoy()"
+                  (input)="onFormField('fechaReunion', $any($event.target).value)"
+                  required
+                />
+              </label>
+            </div>
+            <div class="form-row form-row--full">
+              <label>
+                Descripción del avance
+                <textarea
+                  rows="3"
+                  [value]="form().descripcionAvance"
+                  (input)="onFormField('descripcionAvance', $any($event.target).value)"
+                  placeholder="Describe el avance registrado en esta reunión..."
+                ></textarea>
+              </label>
+            </div>
+            <div class="form-row form-row--full">
+              <label>
+                Compromisos
+                <textarea
+                  rows="3"
+                  [value]="form().compromisos"
+                  (input)="onFormField('compromisos', $any($event.target).value)"
+                  placeholder="Compromisos asumidos por el evaluado..."
+                ></textarea>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary" [disabled]="guardando()">
+                {{ guardando() ? 'Registrando...' : 'Registrar reunión' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      }
+
+      <div class="reuniones-list">
+        <h3 class="reuniones-list__title">Historial de reuniones</h3>
+        @for (reunion of resumen()!.reuniones; track reunion.id) {
+          <div class="reunion-card" [class.reunion-card--confirmada]="reunion.estado === 'CONFIRMADA'">
+            <div class="reunion-card__header">
+              <div class="reunion-card__meta">
+                <span class="badge" [attr.data-tipo]="reunion.tipoReunion">{{ reunion.tipoReunionLabel }}</span>
+                <span class="reunion-card__fecha">{{ reunion.fechaReunion | date:'dd/MM/yyyy' }}</span>
+              </div>
+              <div class="reunion-card__estado">
+                <span class="badge badge--estado" [attr.data-estado]="reunion.estado">{{ reunion.estado }}</span>
+                @if (reunion.consentimientoEvaluado) {
+                  <span class="badge badge--consent">Confirmada por evaluado</span>
+                }
+              </div>
+            </div>
+            @if (reunion.descripcionAvance) {
+              <p class="reunion-card__desc"><strong>Avance:</strong> {{ reunion.descripcionAvance }}</p>
+            }
+            @if (reunion.compromisos) {
+              <p class="reunion-card__desc"><strong>Compromisos:</strong> {{ reunion.compromisos }}</p>
+            }
+            @if (!reunion.consentimientoEvaluado && canRegistrar()) {
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm"
+                [disabled]="confirmando() === reunion.id"
+                (click)="confirmar(reunion.id)"
+              >
+                {{ confirmando() === reunion.id ? 'Confirmando...' : 'Confirmar como evaluado' }}
+              </button>
+            }
+          </div>
+        } @empty {
+          <div class="reuniones-list__empty">
+            No hay reuniones registradas aún.
+            @if (canRegistrar()) {
+              Usa el formulario de arriba para registrar la primera reunión.
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</section>

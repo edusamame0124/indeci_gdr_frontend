@@ -3,66 +3,89 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../shared/models/api-response.model';
-import { ReporteAvance, ReporteOportunidadMejora, ReporteResultado } from './reportes.models';
+import { CasoCie, SolicitudConfirmacion } from '../confirmacion/confirmacion.models';
+import {
+  ReporteAvance,
+  ReporteDistribucionCalificacion,
+  ReporteOportunidadMejora,
+  ReporteResultado
+} from './reportes.models';
 
 @Injectable({ providedIn: 'root' })
 export class ReportesService {
   private readonly http = inject(HttpClient);
 
-  getReporteAvance(evaluatedId?: number | null): Observable<ReporteAvance[]> {
+  getReporteAvance(cycleId: number, evaluatedId?: number | null): Observable<ReporteAvance[]> {
+    const params: Record<string, string | number> = { cycleId };
+    if (evaluatedId) params['evaluatedId'] = evaluatedId;
     return this.http
-      .get<ApiResponse<ReporteAvance[]>>(`${environment.apiBaseUrl}/reportes/avance`, {
-        params: evaluatedId ? { evaluatedId } : {}
-      })
+      .get<ApiResponse<ReporteAvance[]>>(`${environment.apiBaseUrl}/reportes/avance`, { params })
       .pipe(map((response) => response.data));
   }
 
-  exportarReporteAvance(evaluatedId?: number | null): Observable<Blob> {
-    return this.http.get(`${environment.apiBaseUrl}/reportes/avance/exportar`, {
-      params: evaluatedId ? { evaluatedId } : {},
-      responseType: 'blob'
-    });
+  exportarReporteAvance(cycleId: number, evaluatedId?: number | null): Observable<Blob> {
+    const params: Record<string, string | number> = { cycleId };
+    if (evaluatedId) params['evaluatedId'] = evaluatedId;
+    return this.http.get(`${environment.apiBaseUrl}/reportes/avance/exportar`, { params, responseType: 'blob' });
   }
 
-  getReporteResultados(evaluatedId?: number | null): Observable<ReporteResultado[]> {
+  getReporteResultados(cycleId: number, evaluatedId?: number | null): Observable<ReporteResultado[]> {
+    const params: Record<string, string | number> = { cycleId };
+    if (evaluatedId) params['evaluatedId'] = evaluatedId;
     return this.http
-      .get<ApiResponse<ReporteResultado[]>>(`${environment.apiBaseUrl}/reportes/resultados`, {
-        params: evaluatedId ? { evaluatedId } : {}
-      })
+      .get<ApiResponse<ReporteResultado[]>>(`${environment.apiBaseUrl}/reportes/resultados`, { params })
       .pipe(map((response) => response.data));
   }
 
-  exportarReporteResultados(evaluatedId?: number | null): Observable<Blob> {
-    return this.http.get(`${environment.apiBaseUrl}/reportes/resultados/exportar`, {
-      params: evaluatedId ? { evaluatedId } : {},
-      responseType: 'blob'
-    });
+  exportarReporteResultados(cycleId: number, evaluatedId?: number | null): Observable<Blob> {
+    const params: Record<string, string | number> = { cycleId };
+    if (evaluatedId) params['evaluatedId'] = evaluatedId;
+    return this.http.get(`${environment.apiBaseUrl}/reportes/resultados/exportar`, { params, responseType: 'blob' });
   }
 
-  getReporteOportunidades(evaluatedId?: number | null, estadoCodigo?: string | null): Observable<ReporteOportunidadMejora[]> {
-    const params: Record<string, string | number> = {};
-    if (evaluatedId) {
-      params['evaluatedId'] = evaluatedId;
-    }
-    if (estadoCodigo) {
-      params['estadoCodigo'] = estadoCodigo;
-    }
+  getReporteOportunidades(cycleId: number, evaluatedId?: number | null, estadoCodigo?: string | null): Observable<ReporteOportunidadMejora[]> {
+    const params: Record<string, string | number> = { cycleId };
+    if (evaluatedId) params['evaluatedId'] = evaluatedId;
+    if (estadoCodigo) params['estadoCodigo'] = estadoCodigo;
     return this.http
       .get<ApiResponse<ReporteOportunidadMejora[]>>(`${environment.apiBaseUrl}/reportes/oportunidades-mejora`, { params })
       .pipe(map((response) => response.data));
   }
 
-  exportarReporteOportunidades(evaluatedId?: number | null, estadoCodigo?: string | null): Observable<Blob> {
-    const params: Record<string, string | number> = {};
-    if (evaluatedId) {
-      params['evaluatedId'] = evaluatedId;
-    }
-    if (estadoCodigo) {
-      params['estadoCodigo'] = estadoCodigo;
-    }
-    return this.http.get(`${environment.apiBaseUrl}/reportes/oportunidades-mejora/exportar`, {
-      params,
-      responseType: 'blob'
-    });
+  exportarReporteOportunidades(cycleId: number, evaluatedId?: number | null, estadoCodigo?: string | null): Observable<Blob> {
+    const params: Record<string, string | number> = { cycleId };
+    if (evaluatedId) params['evaluatedId'] = evaluatedId;
+    if (estadoCodigo) params['estadoCodigo'] = estadoCodigo;
+    return this.http.get(`${environment.apiBaseUrl}/reportes/oportunidades-mejora/exportar`, { params, responseType: 'blob' });
+  }
+
+  getReporteConfirmaciones(): Observable<SolicitudConfirmacion[]> {
+    return this.http
+      .get<ApiResponse<SolicitudConfirmacion[]>>(`${environment.apiBaseUrl}/reportes/confirmaciones`)
+      .pipe(map((response) => response.data));
+  }
+
+  exportarReporteConfirmaciones(): Observable<Blob> {
+    return this.http.get(`${environment.apiBaseUrl}/reportes/confirmaciones/exportar`, { responseType: 'blob' });
+  }
+
+  getReporteCie(): Observable<CasoCie[]> {
+    return this.http
+      .get<ApiResponse<CasoCie[]>>(`${environment.apiBaseUrl}/reportes/cie`)
+      .pipe(map((response) => response.data));
+  }
+
+  exportarReporteCie(): Observable<Blob> {
+    return this.http.get(`${environment.apiBaseUrl}/reportes/cie/exportar`, { responseType: 'blob' });
+  }
+
+  getReporteDistribucion(cycleId: number): Observable<ReporteDistribucionCalificacion[]> {
+    return this.http
+      .get<ApiResponse<ReporteDistribucionCalificacion[]>>(`${environment.apiBaseUrl}/reportes/distribucion-calificaciones`, { params: { cycleId } })
+      .pipe(map((response) => response.data));
+  }
+
+  exportarReporteDistribucion(cycleId: number): Observable<Blob> {
+    return this.http.get(`${environment.apiBaseUrl}/reportes/distribucion-calificaciones/exportar`, { params: { cycleId }, responseType: 'blob' });
   }
 }

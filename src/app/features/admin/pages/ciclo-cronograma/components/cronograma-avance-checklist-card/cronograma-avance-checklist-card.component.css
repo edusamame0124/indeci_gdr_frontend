@@ -1,0 +1,202 @@
+.avance-checklist {
+  background: var(--sisrh-surface, #fff);
+  border: 1px solid var(--sisrh-border, #d9e1ea);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+}
+
+.avance-checklist__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.avance-checklist__title {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--sisrh-text, #1f2937);
+}
+
+.avance-checklist__subtitle {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--sisrh-text-muted, #64748b);
+}
+
+.avance-checklist__summary {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.avance-checklist__summary--ok {
+  background: var(--sisrh-success-100, #e7f5ee);
+  color: var(--sisrh-success, #157347);
+}
+
+.avance-checklist__summary--warn {
+  background: var(--sisrh-warning-100, #fff4db);
+  color: var(--sisrh-warning, #b7791f);
+}
+
+.avance-checklist__server-alert {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: var(--sisrh-danger-100, #fdecec);
+  color: #991b1b;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.avance-checklist__loading {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--sisrh-text-muted, #64748b);
+}
+
+.avance-checklist__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.avance-checklist__item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--sisrh-border-soft, #e7ecf2);
+  border-radius: 10px;
+  background: var(--sisrh-surface-muted, #f8fafc);
+}
+
+.avance-checklist__item[data-status='passed'] {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.avance-checklist__item[data-status='failed'] {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.avance-checklist__item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #64748b;
+}
+
+.avance-checklist__item[data-status='passed'] .avance-checklist__item-icon {
+  color: #15803d;
+}
+
+.avance-checklist__item[data-status='failed'] .avance-checklist__item-icon {
+  color: #b45309;
+}
+
+.avance-checklist__item-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.avance-checklist__item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.avance-checklist__item-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--sisrh-text, #1f2937);
+}
+
+.avance-checklist__badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.avance-checklist__badge[data-status='passed'] {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.avance-checklist__badge[data-status='failed'] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.avance-checklist__badge[data-status='pending'] {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.avance-checklist__item-desc,
+.avance-checklist__item-detail,
+.avance-checklist__item-ref {
+  margin: 0 0 4px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--sisrh-text-muted, #64748b);
+}
+
+.avance-checklist__item-detail {
+  color: var(--sisrh-text, #1f2937);
+  font-weight: 500;
+}
+
+.avance-checklist__item-ref {
+  font-size: 0.74rem;
+  color: var(--sisrh-text-soft, #94a3b8);
+}
+
+.avance-checklist__action {
+  display: inline-flex;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7f1714;
+  text-decoration: none;
+}
+
+.avance-checklist__action:hover {
+  text-decoration: underline;
+}
+
+.avance-checklist__action:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .avance-checklist {
+    padding: 16px;
+  }
+}

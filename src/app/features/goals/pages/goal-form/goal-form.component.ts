@@ -9,6 +9,7 @@ import { IndicatorsService } from '../../../../core/indicators/indicators.servic
 import { GoalDetail, GoalUpsertRequest } from '../../../../core/goals/goals.models';
 import { GoalsService } from '../../../../core/goals/goals.service';
 import { UiToastService } from '../../../../shared/ui/ui-toast.service';
+import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
 
 @Component({
   selector: 'app-goal-form',
@@ -23,7 +24,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
           <p class="page__subtitle">Formulario reutilizado para registrar y actualizar metas del ciclo activo.</p>
         </div>
         <div class="page__actions">
-          <a routerLink="/dashboard/goals" class="page__link page__link--ghost">Volver al listado</a>
+          <a [routerLink]="cicloNavService.moduleRoute('metas')" class="page__link page__link--ghost">Volver al listado</a>
         </div>
       </div>
 
@@ -92,6 +93,16 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
             <label class="field field--full">
               <span>Descripcion</span>
               <textarea rows="4" formControlName="description" placeholder="Descripcion opcional"></textarea>
+            </label>
+
+            <label class="field">
+              <span>Fecha inicio</span>
+              <input type="date" formControlName="startDate" />
+            </label>
+
+            <label class="field">
+              <span>Fecha fin</span>
+              <input type="date" formControlName="endDate" />
             </label>
 
             <label class="field">
@@ -387,6 +398,7 @@ export class GoalFormComponent {
   private readonly indicatorsService = inject(IndicatorsService);
   private readonly goalsService = inject(GoalsService);
   private readonly toastService = inject(UiToastService);
+  readonly cicloNavService = inject(CicloNavService);
 
   readonly mode = signal<'create' | 'edit'>('create');
   readonly assignments = signal<HrAssignmentSummary[]>([]);
@@ -401,6 +413,8 @@ export class GoalFormComponent {
     indicatorId: [null as number | null, [Validators.required]],
     title: ['', [Validators.required]],
     description: [''],
+    startDate: ['', [Validators.required]],
+    endDate: ['', [Validators.required]],
     expectedValue: [null as number | null, [Validators.required, Validators.min(0.0001)]],
     weight: [null as number | null, [Validators.required, Validators.min(0.01), Validators.max(100)]]
   });
@@ -428,6 +442,8 @@ export class GoalFormComponent {
       indicatorId: raw.indicatorId as number,
       title: (raw.title ?? '').trim(),
       description: (raw.description ?? '').trim() || null,
+      startDate: raw.startDate as string,
+      endDate: raw.endDate as string,
       expectedValue: Number(raw.expectedValue),
       weight: Number(raw.weight)
     };
@@ -435,9 +451,10 @@ export class GoalFormComponent {
     this.saving.set(true);
     this.formError.set('');
 
+    const cycleId = this.cicloNavService.cicloId()!;
     const request$ = this.mode() === 'edit' && this.goalDetail()
-      ? this.goalsService.updateGoal(this.goalDetail()!.id, payload)
-      : this.goalsService.createGoal(payload);
+      ? this.goalsService.updateGoal(this.goalDetail()!.id, cycleId, payload)
+      : this.goalsService.createGoal(cycleId, payload);
 
     request$.subscribe({
       next: (goal) => {
@@ -450,7 +467,7 @@ export class GoalFormComponent {
         );
 
         if (!editing) {
-          this.router.navigate(['/dashboard/goals', goal.id]);
+          this.router.navigate(this.cicloNavService.moduleRoute('metas', String(goal.id)));
         } else {
           this.patchForm(goal);
         }
@@ -473,7 +490,7 @@ export class GoalFormComponent {
           next: (indicators) => {
             this.indicators.set(indicators);
             const goalRequest$: Observable<GoalDetail | null> =
-              goalId !== null ? this.goalsService.getGoal(goalId) : of<GoalDetail | null>(null);
+              goalId !== null ? this.goalsService.getGoal(goalId, this.cicloNavService.cicloId()!) : of<GoalDetail | null>(null);
             goalRequest$.subscribe({
               next: (goal: GoalDetail | null) => {
                 this.goalDetail.set(goal);
@@ -485,6 +502,8 @@ export class GoalFormComponent {
                     indicatorId: null,
                     title: '',
                     description: '',
+                    startDate: '',
+                    endDate: '',
                     expectedValue: null,
                     weight: null
                   });
@@ -516,6 +535,8 @@ export class GoalFormComponent {
       indicatorId: goal.indicatorId,
       title: goal.title,
       description: goal.description ?? '',
+      startDate: goal.startDate,
+      endDate: goal.endDate,
       expectedValue: goal.expectedValue,
       weight: goal.weight
     });

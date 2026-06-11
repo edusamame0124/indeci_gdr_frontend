@@ -1,0 +1,125 @@
+<section class="workspace">
+  <div class="workspace__container">
+    <nav class="breadcrumb" aria-label="Ruta">
+      <a [routerLink]="cicloNavService.boardRoute()">{{ cicloNavService.boardLabel() }}</a>
+      <span>/</span>
+      <span>Cupo Rendimiento distinguido · ORH</span>
+    </nav>
+
+    <header class="workspace__hero">
+      <h1 class="workspace__title">Listado institucional y requisitos (ORH)</h1>
+      <p class="workspace__subtitle">
+        Calificación notificada y cumplimiento 8.2 (marcador operativo hasta incorporar texto normativo institucional).
+        Solo buen rendimiento más notificación y 8.2 ingresan al grupo priorizado.
+      </p>
+      <p class="workspace__norma">Base normativa: RPE 068-2020-SERVIR-PE Art. 50 · VAL-08</p>
+    </header>
+
+    <app-cycle-context-bar />
+
+    @if (error()) {
+      <div class="alerta alerta--error" role="alert">{{ error() }}</div>
+    }
+    @if (success()) {
+      <div class="alerta alerta--ok" role="status">{{ success() }}</div>
+    }
+
+    @if (summary(); as s) {
+      @if (s.bloqueoVal08Activo) {
+        <div class="alerta alerta--warning" role="alert">
+          <strong>VAL-08 — Confirmaciones pendientes:</strong>
+          {{ s.candidatosConConfirmacionPendiente }} candidato(s) tienen solicitud de confirmación
+          ante el CIE. La Junta no podrá asignar Rendimiento distinguido hasta que el CIE resuelva
+          cada caso (RPE 068-2020 Art. 50).
+        </div>
+      }
+      <div class="resumen-card">
+        <div class="resumen-card__item">
+          <span class="resumen-card__label">Universo notificado</span>
+          <span class="resumen-card__value">{{ s.notifiedUniverseTotal }}</span>
+        </div>
+        <div class="resumen-card__item">
+          <span class="resumen-card__label">Tope distinguidos</span>
+          <span class="resumen-card__value">{{ s.maxDistinguidosSlots }}</span>
+        </div>
+        <div class="resumen-card__item">
+          <span class="resumen-card__label">Asignados</span>
+          <span class="resumen-card__value">{{ s.currentDistinguidosAssigned }}</span>
+        </div>
+        <div class="resumen-card__item">
+          <span class="resumen-card__label">Restantes</span>
+          <span class="resumen-card__value">{{ s.remainingDistinguidoSlots }}</span>
+        </div>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="loading-state">Cargando resultados...</div>
+    } @else {
+      @if (rows(); as list) {
+      <div class="tabla-wrap">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Evaluado</th>
+              <th>Puntaje</th>
+              <th>Calificación</th>
+              <th>Prioridad</th>
+              <th>Confirmación (VAL-08)</th>
+              <th>Notificada</th>
+              <th>Ordinal 8.2</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of list; track r.assignmentId) {
+              <tr [class.tabla__row--bloqueada]="r.bloqueadoPorVal08">
+                <td>{{ r.evaluatedDisplayName }}</td>
+                <td>{{ r.consolidatedScore | number: '1.2-4' }}</td>
+                <td>{{ r.qualitativeRatingLabel || '—' }}</td>
+                <td>{{ r.rankEligible > 0 ? r.rankEligible : '—' }}</td>
+                <td>
+                  <span
+                    class="badge badge--confirmacion"
+                    [attr.data-estado]="r.estadoConfirmacion"
+                  >
+                    {{ r.estadoConfirmacionLabel }}
+                  </span>
+                </td>
+                <td>
+                  <label class="check-label">
+                    <input
+                      type="checkbox"
+                      [checked]="editableNotified()[r.assignmentId]"
+                      (change)="setNotified(r.assignmentId, $event)"
+                    />
+                  </label>
+                </td>
+                <td>
+                  <label class="check-label">
+                    <input
+                      type="checkbox"
+                      [checked]="editableDirective82()[r.assignmentId]"
+                      (change)="setDirective82(r.assignmentId, $event)"
+                    />
+                  </label>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn--primary"
+                    (click)="saveRow(r)"
+                    [disabled]="savingAssignmentId() === r.assignmentId"
+                  >
+                    Actualizar flags
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    }
+  </div>
+</section>

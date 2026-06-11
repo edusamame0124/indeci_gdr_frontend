@@ -1,0 +1,281 @@
+<section class="page">
+  <nav class="breadcrumb" aria-label="Navegacion">
+    <a [routerLink]="cicloNavService.boardRoute()" class="breadcrumb__link">{{ cicloNavService.boardLabel() }}</a>
+    <span class="breadcrumb__sep" aria-hidden="true">/</span>
+    <a [routerLink]="cicloNavService.moduleRoute('evaluacion-final')" class="breadcrumb__link">Evaluacion Final</a>
+    <span class="breadcrumb__sep" aria-hidden="true">/</span>
+    @if (evaluatedId()) {
+      <a [routerLink]="cicloNavService.moduleRoute('evaluacion-final', evaluatedId()!)" class="breadcrumb__link">Detalle</a>
+      <span class="breadcrumb__sep" aria-hidden="true">/</span>
+    }
+    <span class="breadcrumb__current">Oportunidades</span>
+  </nav>
+
+  <div class="page__header">
+    <div class="page__header-left">
+      <h1>Oportunidades de mejora</h1>
+      <p class="page__subtitle">Registro, seguimiento minimo y cierre conservador vinculados al resultado consolidado del evaluado.</p>
+    </div>
+    <div class="page__actions">
+      <a [routerLink]="evaluatedId() ? cicloNavService.moduleRoute('evaluacion-final', evaluatedId()!) : cicloNavService.moduleRoute('evaluacion-final')" class="btn btn--outline-neutral btn--sm">
+        <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M9.5 4.5 4 10l5.5 5.5 1.1-1.1-3.6-3.6H16v-1.6H7l3.6-3.6-1.1-1.1Z"/>
+        </svg>
+        Volver al detalle
+      </a>
+      @if (canManageImprovements()) {
+        <button type="button" class="btn btn--primary" (click)="openCreateModal()" [disabled]="!evaluatedId()">
+          <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          </svg>
+          Nueva oportunidad
+        </button>
+      }
+    </div>
+  </div>
+
+  <app-cycle-context-bar />
+
+  @if (errorMessage()) {
+    <div class="alert alert--error" role="alert">
+      <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <section class="card">
+    <header class="card__header">
+      <div class="card__header-left">
+        <div class="card__header-icon">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-5.6 8c0-3.1 2.5-5.6 5.6-5.6s5.6 2.5 5.6 5.6H4.4Z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="card__title">Evaluado activo</h2>
+          <p class="card__desc">Seleccione el evaluado para consultar y registrar oportunidades de mejora.</p>
+        </div>
+      </div>
+      @if (evaluatedId()) {
+        <span class="card__count">{{ selectedEvaluationLabel() }}</span>
+      }
+    </header>
+    <div class="selector-body">
+      <label class="field">
+        <span class="field__label">Evaluado</span>
+        <select [formControl]="selectionForm.controls.evaluatedId">
+          <option [ngValue]="null">Seleccione un evaluado</option>
+          @for (evaluation of availableEvaluations(); track evaluation.evaluatedId) {
+            <option [ngValue]="evaluation.evaluatedId">
+              {{ evaluation.evaluatedName }} | {{ evaluation.cycleName }}
+            </option>
+          }
+        </select>
+      </label>
+      <button
+        type="button"
+        class="btn btn--primary btn--sm"
+        (click)="applyEvaluatedSelection()"
+        [disabled]="loadingEvaluations() || !selectionForm.getRawValue().evaluatedId"
+      >
+        @if (loadingEvaluations()) {
+          <span class="loading-spinner loading-spinner--sm"></span>
+        }
+        {{ loadingEvaluations() ? 'Cargando...' : 'Ver' }}
+      </button>
+    </div>
+  </section>
+
+  <section class="card">
+    <header class="card__header">
+      <div class="card__header-left">
+        <div class="card__header-icon">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M3 3h14v2H3V3Zm0 4h14v2H3V7Zm0 4h10v2H3v-2Zm0 4h7v2H3v-2Z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="card__title">Listado de oportunidades</h2>
+          <p class="card__desc">Consulte oportunidades registradas para el evaluado seleccionado.</p>
+        </div>
+      </div>
+      @if (!loading() && improvements().length) {
+        <span class="card__count">{{ improvements().length }} {{ improvements().length === 1 ? 'oportunidad' : 'oportunidades' }}</span>
+      }
+    </header>
+
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <span>Cargando oportunidades...</span>
+      </div>
+    } @else if (!evaluatedId()) {
+      <div class="empty-state">
+        <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-5.6 8c0-3.1 2.5-5.6 5.6-5.6s5.6 2.5 5.6 5.6H4.4Z"/>
+        </svg>
+        <p>Seleccione un evaluado desde evaluacion final para ver oportunidades de mejora.</p>
+      </div>
+    } @else if (!improvements().length) {
+      <div class="empty-state">
+        <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M3 3h14v2H3V3Zm0 4h14v2H3V7Zm0 4h10v2H3v-2Zm0 4h7v2H3v-2Z"/>
+        </svg>
+        <p>Aun no hay oportunidades registradas para el evaluado seleccionado.</p>
+        @if (canManageImprovements()) {
+          <button type="button" class="btn btn--primary btn--sm" (click)="openCreateModal()">Registrar primera oportunidad</button>
+        }
+      </div>
+    } @else {
+      <div class="desktop-table">
+        <table>
+          <thead>
+            <tr>
+              <th class="th--num">#</th>
+              <th>Descripcion</th>
+              <th>Responsable</th>
+              <th>Plazo</th>
+              <th class="th--center">Estado</th>
+              <th class="th--actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (improvement of pagedImprovements(); track improvement.idOportunidadMejora; let i = $index) {
+              <tr>
+                <td class="td--num">{{ (currentPage() - 1) * pageSize + i + 1 }}</td>
+                <td class="td--title">{{ improvement.descripcion }}</td>
+                <td>{{ improvement.responsable }}</td>
+                <td class="td--mono">{{ improvement.plazoCompromiso }}</td>
+                <td class="td--center">
+                  <span class="status-pill" [class.status-pill--open]="improvement.codigoEstado === 'OPEN'" [class.status-pill--closed]="improvement.codigoEstado === 'CLOSED'">
+                    {{ improvement.nombreEstado }}
+                  </span>
+                </td>
+                <td>
+                  <div class="actions-cell">
+                    <a [routerLink]="cicloNavService.moduleRoute('oportunidades-mejora', improvement.idOportunidadMejora)" class="btn btn--outline btn--xs">
+                      <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="M10 4.5a8.5 8.5 0 0 0-8.4 7c1 3.7 4.4 6.5 8.4 6.5s7.4-2.8 8.4-6.5A8.5 8.5 0 0 0 10 4.5Zm0 11a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-7.2a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4Z"/>
+                      </svg>
+                      Ver detalle
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-cards">
+        @for (improvement of pagedImprovements(); track improvement.idOportunidadMejora) {
+          <article class="opp-card">
+            <div class="opp-card__top">
+              <strong class="opp-card__title">{{ improvement.descripcion }}</strong>
+              <span class="status-pill" [class.status-pill--open]="improvement.codigoEstado === 'OPEN'" [class.status-pill--closed]="improvement.codigoEstado === 'CLOSED'">
+                {{ improvement.nombreEstado }}
+              </span>
+            </div>
+            <div class="opp-card__meta">
+              <div class="opp-card__field">
+                <span>Responsable</span>
+                <strong>{{ improvement.responsable }}</strong>
+              </div>
+              <div class="opp-card__field">
+                <span>Plazo</span>
+                <strong>{{ improvement.plazoCompromiso }}</strong>
+              </div>
+            </div>
+            <div class="opp-card__actions">
+              <a [routerLink]="cicloNavService.moduleRoute('oportunidades-mejora', improvement.idOportunidadMejora)" class="btn btn--outline btn--sm btn--full">Ver detalle</a>
+            </div>
+          </article>
+        }
+      </div>
+
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <div class="pagination__info">
+            Mostrando {{ (currentPage() - 1) * pageSize + 1 }}&ndash;{{ currentPageEnd() }} de {{ improvements().length }}
+          </div>
+          <div class="pagination__controls">
+            <button type="button" class="btn btn--ghost btn--xs" (click)="goToPage(1)" [disabled]="currentPage() === 1" aria-label="Primera pagina">
+              <svg class="btn__icon" viewBox="0 0 20 20"><path d="M13.5 15.5 8 10l5.5-5.5-1.1-1.1L6 10l6.4 6.6 1.1-1.1ZM7 4.5H5.5v11H7v-11Z"/></svg>
+            </button>
+            <button type="button" class="btn btn--ghost btn--xs" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1" aria-label="Pagina anterior">
+              <svg class="btn__icon" viewBox="0 0 20 20"><path d="M12.5 15.5 7 10l5.5-5.5 1.1 1.1L9.2 10l4.4 4.4-1.1 1.1Z"/></svg>
+            </button>
+            <span class="pagination__page">{{ currentPage() }} / {{ totalPages() }}</span>
+            <button type="button" class="btn btn--ghost btn--xs" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()" aria-label="Pagina siguiente">
+              <svg class="btn__icon" viewBox="0 0 20 20"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6 7.5 4.5Z"/></svg>
+            </button>
+            <button type="button" class="btn btn--ghost btn--xs" (click)="goToPage(totalPages())" [disabled]="currentPage() === totalPages()" aria-label="Ultima pagina">
+              <svg class="btn__icon" viewBox="0 0 20 20"><path d="M6.5 4.5 12 10l-5.5 5.5 1.1 1.1L14 10 7.6 3.4 6.5 4.5ZM13 4.5h1.5v11H13v-11Z"/></svg>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </section>
+
+  @if (modalOpen()) {
+    <div class="modal-backdrop" (click)="closeModal()"></div>
+    <section class="modal" role="dialog" aria-modal="true" aria-label="Registrar oportunidad de mejora">
+      <div class="modal__header">
+        <div>
+          <p class="modal__eyebrow">Oportunidades de mejora</p>
+          <h2>Nueva oportunidad</h2>
+          <p class="modal__subtitle">Complete los datos minimos de la oportunidad y registre desde esta vista.</p>
+        </div>
+        <button type="button" class="modal__close" (click)="closeModal()" aria-label="Cerrar modal">
+          <svg viewBox="0 0 20 20"><path d="M14.3 5.7l-1-1L10 8l-3.3-3.3-1 1L9 9l-3.3 3.3 1 1L10 10l3.3 3.3 1-1L11 9l3.3-3.3Z"/></svg>
+        </button>
+      </div>
+
+      <div class="context-bar context-bar--compact">
+        <div class="context-bar__item">
+          <span class="context-bar__label">Evaluado</span>
+          <span class="context-bar__value">{{ selectedEvaluationLabel() }}</span>
+        </div>
+      </div>
+
+      @if (modalError()) {
+        <div class="alert alert--error" role="alert">
+          <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+          </svg>
+          <span>{{ modalError() }}</span>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submitImprovement()" class="form-grid">
+        <label class="field field--full">
+          <span class="field__label">Descripcion <span class="field__required">*</span></span>
+          <textarea rows="4" formControlName="descripcion" placeholder="Describa la oportunidad de mejora"></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Responsable <span class="field__required">*</span></span>
+          <input type="text" formControlName="responsable" placeholder="Nombre del responsable" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Plazo compromiso <span class="field__required">*</span></span>
+          <input type="date" formControlName="plazoCompromiso" />
+        </label>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving() || form.invalid">
+            @if (saving()) {
+              <span class="loading-spinner loading-spinner--sm"></span>
+            }
+            Registrar
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+</section>

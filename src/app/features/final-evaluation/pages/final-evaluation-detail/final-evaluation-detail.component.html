@@ -1,0 +1,377 @@
+<section class="page">
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Navegación">
+    <a [routerLink]="cicloNavService.boardRoute()" class="breadcrumb__link">{{ cicloNavService.boardLabel() }}</a>
+    <span class="breadcrumb__sep" aria-hidden="true">/</span>
+    <a [routerLink]="cicloNavService.moduleRoute('evaluacion-final')" class="breadcrumb__link">Evaluacion Final</a>
+    <span class="breadcrumb__sep" aria-hidden="true">/</span>
+    <span class="breadcrumb__current">Detalle</span>
+  </nav>
+
+  <!-- Page header -->
+  <div class="page__header">
+    <div class="page__header-left">
+      <h1>Detalle por evaluado</h1>
+      <p class="page__subtitle">
+        Base minima y segura para registrar puntaje por meta y consolidar el resultado del evaluado.
+      </p>
+    </div>
+    <div class="page__actions">
+      <a [routerLink]="cicloNavService.moduleRoute('evaluacion-final')" class="btn btn--outline-neutral btn--sm">
+        <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M9.5 4.5 4 10l5.5 5.5 1.1-1.1-3.6-3.6H16v-1.6H7l3.6-3.6-1.1-1.1Z"/>
+        </svg>
+        Volver al listado
+      </a>
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="alert alert--error" role="alert">
+      <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <span>Cargando evaluacion final...</span>
+    </div>
+  } @else if (evaluation()) {
+    <!-- Context bar -->
+    <div class="context-bar">
+      <div class="context-bar__item">
+        <span class="context-bar__label">Evaluado</span>
+        <span class="context-bar__value">{{ evaluation()!.evaluatedName }}</span>
+      </div>
+      <div class="context-bar__divider"></div>
+      <div class="context-bar__item">
+        <span class="context-bar__label">Evaluador</span>
+        <span class="context-bar__value">{{ evaluation()!.evaluatorName }}</span>
+      </div>
+      <div class="context-bar__divider"></div>
+      <div class="context-bar__item">
+        <span class="context-bar__label">Ciclo</span>
+        <span class="context-bar__value">{{ evaluation()!.cycleName }}</span>
+      </div>
+      <div class="context-bar__divider"></div>
+      <div class="context-bar__item">
+        <span class="context-bar__label">Estado</span>
+        <span class="context-bar__value">
+          <span class="status-badge">
+            <span class="status-badge__dot"></span>
+            {{ evaluation()!.status }}
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <section class="layout-grid">
+      <article class="panel panel--compact">
+        <header class="panel__header">
+          <div class="panel__header-icon">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm3.7 6.3-4.2 4.2a.8.8 0 0 1-1.1 0L6.3 10.4l1.1-1.1 1.5 1.5 3.7-3.7 1.1 1.2Z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="panel__title">Resultado consolidado</h2>
+            <p class="panel__desc">Valor consolidado por evaluado calculado en backend.</p>
+          </div>
+        </header>
+
+        <div class="result-box">
+          <span class="result-box__label">Resultado</span>
+          <small>#{{ result()?.resultId ?? 'Sin consolidar' }}</small>
+          <span class="result-box__label">Puntaje actual</span>
+          <strong>{{ result()?.consolidatedScore ?? evaluation()!.consolidatedScore ?? 'Pendiente' }}</strong>
+          <span class="result-box__label">Calificación SERVIR</span>
+          @if (qualitativeRatingCode(); as code) {
+            <span
+              class="rating-badge"
+              [class.rating-badge--good]="code === 'BUEN_RENDIMIENTO' || code === 'DISTINGUIDO'"
+              [class.rating-badge--warn]="code === 'SUJETO_OBSERVACION'"
+              [class.rating-badge--bad]="code === 'DESAPROBADO'"
+              [class.rating-badge--neutral]="code === 'NO_CALIFICABLE'"
+            >{{ qualitativeRatingLabel() }}</span>
+          } @else {
+            <span class="rating-badge rating-badge--pending">Pendiente</span>
+          }
+          <span class="result-box__label">Segmento del evaluado</span>
+          <small>{{ segmentName() ?? 'Sin segmento' }}</small>
+          <p class="rating-hint">
+            Umbral SERVIR: ≥ 70 para segmento Directivo, ≥ 60 para los demás.
+          </p>
+        </div>
+
+        <!-- P3 — Retroalimentación final (RPE 068-2020 Art. 33-41) -->
+        <div class="retro-final">
+          <header class="retro-final__head">
+            <h3 class="retro-final__title">Retroalimentación final</h3>
+            <p class="retro-final__desc">
+              Reunión con el evaluado que activa el plazo para solicitar confirmación de calificación.
+            </p>
+          </header>
+
+          @if (evaluation()!.fechaReunionRetroFinal) {
+            <dl class="retro-final__data">
+              <div class="retro-final__row">
+                <dt>Fecha de reunión</dt>
+                <dd>{{ evaluation()!.fechaReunionRetroFinal | date: 'dd/MM/yyyy' }}</dd>
+              </div>
+              <div class="retro-final__row">
+                <dt>Plazo para solicitar confirmación</dt>
+                <dd>{{ evaluation()!.plazoSolicitudConfirmacion | date: 'dd/MM/yyyy' }}</dd>
+              </div>
+            </dl>
+
+            @if (plazoEstado(); as plazo) {
+              <span
+                class="plazo-badge"
+                [class.plazo-badge--good]="plazo.tone === 'good'"
+                [class.plazo-badge--warn]="plazo.tone === 'warn'"
+                [class.plazo-badge--bad]="plazo.tone === 'bad'"
+              >
+                <span class="plazo-badge__dot" aria-hidden="true"></span>
+                {{ plazo.label }}
+              </span>
+            }
+
+            @if (isCurrentUserEvaluated() && plazoEstado()?.tone !== 'bad') {
+              <p class="retro-final__hint" role="status">
+                Si no está conforme con su calificación, tiene
+                <strong>{{ evaluation()!.diasHabilesRestantesConfirmacion }} día(s) hábil(es)</strong>
+                (hasta el {{ evaluation()!.plazoSolicitudConfirmacion | date: 'dd/MM/yyyy' }})
+                para solicitar la confirmación de calificación.
+              </p>
+            }
+            @if (isCurrentUserEvaluated() && canViewConfirmacion()) {
+              <p class="retro-final__cta">
+                <a [routerLink]="cicloNavService.moduleRoute('confirmacion')" class="retro-final__link">
+                  Ir a confirmación de calificación
+                </a>
+              </p>
+            }
+          } @else {
+            <span class="plazo-badge plazo-badge--neutral">
+              <span class="plazo-badge__dot" aria-hidden="true"></span>
+              Reunión sin registrar
+            </span>
+          }
+
+          @if (canManageFinalEvaluation() && evaluation()!.evaluationId) {
+            <form class="retro-final__form" (ngSubmit)="startRetroConfirmation()">
+              <label class="field">
+                <span class="field__label">Fecha de reunión de retroalimentación final</span>
+                <input
+                  type="date"
+                  [formControl]="retroFechaControl"
+                  [max]="todayIso"
+                  [attr.aria-invalid]="retroFechaControl.touched && retroFechaControl.invalid"
+                />
+                @if (retroFechaControl.touched && retroFechaControl.invalid) {
+                  <small class="field__error">Ingrese la fecha de la reunión. No puede ser futura.</small>
+                }
+              </label>
+
+              @if (!confirmingRetro()) {
+                <button type="submit" class="btn btn--outline btn--sm btn--full" [disabled]="savingRetro()">
+                  {{ evaluation()!.fechaReunionRetroFinal ? 'Actualizar fecha de reunión' : 'Registrar fecha de reunión' }}
+                </button>
+              } @else {
+                <div class="retro-final__confirm" role="alertdialog" aria-label="Confirmar registro de reunión">
+                  <p class="retro-final__confirm-text">
+                    Esta acción registrará la reunión del
+                    <strong>{{ retroFechaControl.value | date: 'dd/MM/yyyy' }}</strong>
+                    y activará el plazo de 5 días hábiles para que el evaluado solicite
+                    confirmación de calificación.
+                  </p>
+                  <div class="retro-final__confirm-actions">
+                    <button
+                      type="button"
+                      class="btn btn--outline-neutral btn--sm"
+                      (click)="cancelRetroConfirmation()"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn--primary btn--sm"
+                      [disabled]="savingRetro()"
+                      (click)="confirmRetroRegistration()"
+                    >
+                      @if (savingRetro()) {
+                        <span class="loading-spinner loading-spinner--sm"></span>
+                      }
+                      Confirmar registro
+                    </button>
+                  </div>
+                </div>
+              }
+            </form>
+          }
+
+          <p class="retro-final__norma">Base normativa: RPE 068-2020-SERVIR-PE Art. 33-41.</p>
+        </div>
+
+        <div class="result-actions">
+          @if (canNotifyQualificationByEmail() && evaluation()!.evaluationId) {
+            <div class="notify-mail-block">
+              <button
+                type="button"
+                class="btn btn--outline btn--sm btn--full"
+                [disabled]="notifying() || !qualitativeRatingCode()"
+                (click)="notifyQualificationByEmail()"
+                aria-label="Enviar notificación de calificación por correo institucional al evaluado"
+              >
+                @if (notifying()) {
+                  <span class="loading-spinner loading-spinner--outline"></span>
+                } @else {
+                  <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M2.5 5.8 10 10.9l7.5-5.1V15h-15V5.8Zm0-1.4c-.8 0-1.5.7-1.5 1.6v9c0 .9.7 1.6 1.5 1.6h15c.8 0 1.5-.7 1.5-1.6v-9c0-.9-.7-1.6-1.5-1.6h-15Zm14 2.4L10 11 3.5 6.8V14h13V6.8Z"/>
+                  </svg>
+                }
+                Notificar calificación por correo
+              </button>
+              @if (!qualitativeRatingCode()) {
+                <p class="rating-hint notify-mail-block__hint">
+                  Registre primero la calificación cualitativa consolidada para poder enviar el correo al evaluado.
+                </p>
+              }
+            </div>
+          }
+          @if (canViewDocuments()) {
+            <a
+              [routerLink]="cicloNavService.moduleRoute('documentos')"
+              [queryParams]="{ evaluatedId: evaluation()!.evaluatedId }"
+              class="btn btn--outline btn--sm btn--full"
+            >
+              Gestionar documentos
+            </a>
+          }
+          @if (canViewImprovements()) {
+            <a
+              [routerLink]="cicloNavService.moduleRoute('oportunidades-mejora')"
+              [queryParams]="{ evaluatedId: evaluation()!.evaluatedId }"
+              class="btn btn--outline btn--sm btn--full"
+            >
+              Gestionar oportunidades
+            </a>
+          }
+        </div>
+      </article>
+
+      <article class="panel">
+        <header class="panel__header">
+          <div class="panel__header-icon">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M4.7 10.8h10.6v-1.6H4.7v1.6Zm0-4h10.6V5.2H4.7v1.6Zm0 8h7.2v-1.6H4.7v1.6Z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="panel__title">Registro de evaluacion</h2>
+            <p class="panel__desc">Complete el valor alcanzado por meta y guarde desde esta misma pantalla.</p>
+          </div>
+        </header>
+
+        <form [formGroup]="form" (ngSubmit)="saveEvaluation()" class="form-grid">
+          <label class="field field--full">
+            <span class="field__label">Comentario general</span>
+            <textarea
+              rows="3"
+              formControlName="evaluationComment"
+              placeholder="Comentario general de evaluacion"
+              [readonly]="!canManageFinalEvaluation()"
+            ></textarea>
+          </label>
+
+          <div formArrayName="details" class="score-list">
+            @for (detail of evaluation()!.details; track detail.goalId; let i = $index) {
+              <section class="score-card" [formGroupName]="i">
+                <div class="score-card__head">
+                  <div>
+                    <span class="score-card__eyebrow">Meta</span>
+                    <strong>{{ detail.goalTitle }}</strong>
+                  </div>
+                  <span class="status-badge status-badge--muted">
+                    <span class="status-badge__dot"></span>
+                    {{ detail.indicatorName }}
+                  </span>
+                </div>
+
+                <div class="score-card__meta">
+                  <div>
+                    <span>Esperado</span>
+                    <strong>{{ detail.expectedValue }}</strong>
+                  </div>
+                  <div>
+                    <span>Peso</span>
+                    <strong>{{ detail.weight }}%</strong>
+                  </div>
+                </div>
+
+                <div class="score-card__form">
+                  <label class="field field--readonly">
+                    <span class="field__label">Valor alcanzado</span>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      formControlName="achievedValue"
+                      readonly
+                      aria-readonly="true"
+                      tabindex="-1"
+                    />
+                    <small>Se trae de la calificacion previa de la meta.</small>
+                  </label>
+
+                  <label class="field field--readonly">
+                    <span class="field__label">Puntaje</span>
+                    <input
+                      type="text"
+                      [value]="detail.scoreValue ?? 'Pendiente'"
+                      readonly
+                      aria-readonly="true"
+                      tabindex="-1"
+                    />
+                    <small>Calculado por el sistema al calificar la meta.</small>
+                  </label>
+
+                  <label class="field field--full">
+                    <span class="field__label">Detalle</span>
+                    <textarea
+                      rows="3"
+                      formControlName="detailComment"
+                      placeholder="Observacion breve para esta meta"
+                      [readonly]="!canManageFinalEvaluation()"
+                    ></textarea>
+                  </label>
+                </div>
+              </section>
+            }
+          </div>
+
+          @if (canManageFinalEvaluation()) {
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary" [disabled]="saving()">
+                @if (saving()) {
+                  <span class="loading-spinner loading-spinner--sm"></span>
+                }
+                {{ evaluation()!.evaluationId ? 'Actualizar evaluacion' : 'Registrar evaluacion' }}
+              </button>
+            </div>
+          } @else {
+            <div class="info-state">
+              <svg class="info-state__icon" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+              </svg>
+              <span>Su perfil puede consultar esta evaluacion, pero no registrar ni actualizar el consolidado.</span>
+            </div>
+          }
+        </form>
+      </article>
+    </section>
+  }
+</section>

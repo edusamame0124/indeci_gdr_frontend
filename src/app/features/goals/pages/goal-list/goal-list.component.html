@@ -1,0 +1,809 @@
+<section class="page">
+  <nav class="breadcrumb" aria-label="Navegación">
+    <a [routerLink]="cicloNavService.boardRoute()" class="breadcrumb__link">{{ cicloNavService.boardLabel() }}</a>
+    <span class="breadcrumb__sep" aria-hidden="true">/</span>
+    <span class="breadcrumb__current">Metas</span>
+  </nav>
+
+  <div class="page__header">
+    <div class="page__header-left">
+      <p class="page__eyebrow">Metas e indicadores</p>
+      <h1>Metas</h1>
+      <p class="page__subtitle">
+        Gestion unificada de metas del ciclo activo.
+      </p>
+    </div>
+
+    <div class="page__actions">
+      <a [routerLink]="cicloNavService.boardRoute()" class="btn btn--outline-neutral btn--sm">
+        <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M9.5 4.5 4 10l5.5 5.5 1.1-1.1-3.6-3.6H16v-1.6H7l3.6-3.6-1.1-1.1Z"/>
+        </svg>
+        Volver
+      </a>
+      @if (canManageGoals()) {
+        <button type="button" class="btn btn--primary" (click)="openCreateModal()">
+          <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          </svg>
+          Nueva meta
+        </button>
+      }
+    </div>
+  </div>
+
+  <app-cycle-context-bar />
+
+  @if (errorMessage()) {
+    <div class="alert alert--error" role="alert">
+      <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <section class="card">
+    <header class="card__header">
+      <div class="card__header-left">
+        <div class="card__header-icon">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 2.2 2.5 5.6v4.8c0 4 3.2 7 7.5 7.4 4.3-.4 7.5-3.4 7.5-7.4V5.6L10 2.2Zm-1 10.8-3-3 1.1-1.1L9 10.8l3.9-3.9 1.1 1.1-5 5Z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="card__title">Listado</h2>
+          <p class="card__desc">Consulte metas visibles dentro de su alcance operativo.</p>
+        </div>
+      </div>
+      @if (!loading() && goals().length) {
+        <span class="card__count">{{ goals().length }} {{ goals().length === 1 ? 'registro' : 'registros' }}</span>
+      }
+    </header>
+
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <span>Cargando metas...</span>
+      </div>
+    } @else if (!goals().length) {
+      <div class="empty-state">
+        <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 2.2 2.5 5.6v4.8c0 4 3.2 7 7.5 7.4 4.3-.4 7.5-3.4 7.5-7.4V5.6L10 2.2Zm-1 10.8-3-3 1.1-1.1L9 10.8l3.9-3.9 1.1 1.1-5 5Z"/>
+        </svg>
+        <p>No hay metas visibles para su alcance actual.</p>
+        @if (canManageGoals()) {
+          <button type="button" class="btn btn--primary btn--sm" (click)="openCreateModal()">Registrar primera meta</button>
+        }
+      </div>
+    } @else {
+      <div class="desktop-table">
+        <table>
+          <thead>
+            <tr>
+              <th class="th--num">#</th>
+              <th>Meta</th>
+              <th>Evaluado</th>
+              <th>Indicador</th>
+              <th>Valor esperado</th>
+              <th>Peso</th>
+              <th>Fecha final</th>
+              <th>Evidencia</th>
+              <th class="th--stat">Val. alc.</th>
+              <th class="th--stat">Punt.</th>
+              <th class="th--actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (goal of pagedGoals(); track goal.id; let i = $index) {
+              <tr>
+                <td class="td--num">{{ (currentPage() - 1) * pageSize + i + 1 }}</td>
+                <td class="td--title">{{ goal.title }}</td>
+                <td>{{ goal.evaluatedName }}</td>
+                <td>{{ goal.indicatorName }}</td>
+                <td>{{ goal.expectedValue }}</td>
+                <td>{{ goal.weight }}%</td>
+                <td>{{ formatDate(goal.endDate) }}</td>
+                <td class="td--evidence">{{ goal.evidenceCount }}</td>
+                <td class="td--stat">{{ formatAchievedPercent(goal) }}</td>
+                <td class="td--stat">{{ formatCalculatedScore(goal) }}</td>
+                <td class="td--actions-col">
+                  <div class="actions-cell">
+                    <a
+                      [routerLink]="cicloNavService.moduleRoute('metas', goal.id, 'evidencias')"
+                      class="btn btn--icon btn--outline"
+                      aria-label="Evidencias"
+                      title="Evidencias"
+                    >
+                      <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="M4.7 10.8h10.6v-1.6H4.7v1.6Zm0-4h10.6V5.2H4.7v1.6Zm0 8h7.2v-1.6H4.7v1.6Z"/>
+                      </svg>
+                    </a>
+                    @if (canReviewGoals()) {
+                      <button
+                        type="button"
+                        class="btn btn--icon btn--outline"
+                        aria-label="Calificar"
+                        title="Calificar"
+                        (click)="openCalificarModal(goal)"
+                      >
+                        <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="M15.3 4.7 9 11l-2.3-2.3-1.1 1.1L9 13.2l7.4-7.4-1.1-1.1ZM4 16h9v-1.6H4V16Z"/>
+                        </svg>
+                      </button>
+                    }
+                    @if (canManageGoals()) {
+                      <button
+                        type="button"
+                        class="btn btn--icon btn--ghost"
+                        aria-label="Editar"
+                        title="Editar"
+                        (click)="openEditModal(goal.id)"
+                      >
+                        <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="M4 14.5V16h1.5l7.7-7.7-1.5-1.5L4 14.5Zm10.9-7.8a1.1 1.1 0 0 0 0-1.6l-1-1a1.1 1.1 0 0 0-1.6 0l-.8.8L14 7.5l.9-.8Z"/>
+                        </svg>
+                      </button>
+                    }
+                    @if (hasSecondaryActions(goal)) {
+                      <button
+                        type="button"
+                        class="btn btn--icon actions-menu-trigger"
+                        aria-haspopup="menu"
+                        aria-label="Mas acciones"
+                        title="Mas acciones"
+                        [attr.popovertarget]="goalMorePopoverId(goal.id)"
+                      >
+                        <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="M3 5h14v1.6H3V5Zm0 4.2h14v1.6H3V9.2Zm0 4.2h14V15H3v-1.6Z"/>
+                        </svg>
+                      </button>
+                      <div
+                        class="goal-more-popover"
+                        popover="auto"
+                        role="menu"
+                        [attr.id]="goalMorePopoverId(goal.id)"
+                        (toggle)="onGoalMorePopoverToggle($event)"
+                      >
+                        @if (evaluatedIdFor(goal); as evaluatedId) {
+                          @if (canViewFinalEvaluations() || canViewDocuments() || canViewImprovements()) {
+                            <span class="actions-menu__group-label" role="presentation">Consulta</span>
+                          }
+                          @if (canViewFinalEvaluations()) {
+                            <a [routerLink]="cicloNavService.moduleRoute('evaluacion-final', evaluatedId)" role="menuitem">
+                              <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="M10 4.2c-3.6 0-6.6 2.4-7.7 5.8 1.1 3.4 4.1 5.8 7.7 5.8s6.6-2.4 7.7-5.8c-1.1-3.4-4.1-5.8-7.7-5.8Zm0 9.6a3.8 3.8 0 1 1 0-7.6 3.8 3.8 0 0 1 0 7.6Zm0-6a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z"/>
+                              </svg>
+                              Ver evaluacion
+                            </a>
+                          }
+                          @if (canViewDocuments()) {
+                            <a [routerLink]="cicloNavService.moduleRoute('documentos')" [queryParams]="{ evaluatedId: evaluatedId }" role="menuitem">
+                              <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.4L11.6 2H6Zm5 1.2L14.8 7H12a1 1 0 0 1-1-1V3.2ZM7 10h6v1.5H7V10Zm0 3h4v1.5H7V13Z"/>
+                              </svg>
+                              Formatos
+                            </a>
+                          }
+                          @if (canViewImprovements()) {
+                            <a
+                              [routerLink]="cicloNavService.moduleRoute('oportunidades-mejora')"
+                              [queryParams]="{ evaluatedId: evaluatedId }"
+                              role="menuitem"
+                            >
+                              <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="M10 2.4a5.6 5.6 0 0 0-3.4 10v1.4c0 .5.4 1 1 1H12.4c.6 0 1-.5 1-1v-1.4a5.6 5.6 0 0 0-3.4-10Zm-1.6 14.2c0 .5.4 1 1 1h1.2c.6 0 1-.5 1-1v-.4H8.4v.4Z"/>
+                              </svg>
+                              Oportunidades
+                            </a>
+                          }
+                        }
+                        @if (canRequestGoalChange()) {
+                          @if (canViewFinalEvaluations() || canViewDocuments() || canViewImprovements()) {
+                            <span class="actions-menu__divider" role="separator" aria-hidden="true"></span>
+                          }
+                          <span class="actions-menu__group-label" role="presentation">Trabajo</span>
+                          <button
+                            type="button"
+                            class="actions-menu__button"
+                            (click)="openChangeRequestModal(goal)"
+                            role="menuitem"
+                          >
+                            <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
+                              <path d="M4 14.5V16h1.5l7.7-7.7-1.5-1.5L4 14.5Zm10.9-7.8a1.1 1.1 0 0 0 0-1.6l-1-1a1.1 1.1 0 0 0-1.6 0l-.8.8L14 7.5l.9-.8Z"/>
+                            </svg>
+                            Solicitar modificacion
+                          </button>
+                        }
+                        @if (canSendGoalToOrh()) {
+                          <span class="actions-menu__divider" role="separator" aria-hidden="true"></span>
+                          <span class="actions-menu__group-label" role="presentation">Envio</span>
+                          <button
+                            type="button"
+                            class="actions-menu__button actions-menu__button--primary"
+                            (click)="openOrhSubmissionModal(goal)"
+                            role="menuitem"
+                          >
+                            <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
+                              <path d="M3.4 16.6 17 10 3.4 3.4 3.4 8.6 13 10l-9.6 1.4Z"/>
+                            </svg>
+                            Enviar a ORH
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-cards">
+        @for (goal of pagedGoals(); track goal.id) {
+          <article class="goal-card">
+            <div class="goal-card__top">
+              <strong class="goal-card__title">{{ goal.title }}</strong>
+              <span class="goal-card__weight">{{ goal.weight }}%</span>
+            </div>
+            <div class="goal-card__meta">
+              <div class="goal-card__field">
+                <span>Evaluado</span>
+                <strong>{{ goal.evaluatedName }}</strong>
+              </div>
+              <div class="goal-card__field">
+                <span>Indicador</span>
+                <strong>{{ goal.indicatorName }}</strong>
+              </div>
+              <div class="goal-card__field">
+                <span>Valor esperado</span>
+                <strong>{{ goal.expectedValue }}</strong>
+              </div>
+              <div class="goal-card__field">
+                <span>Fecha final</span>
+                <strong>{{ formatDate(goal.endDate) }}</strong>
+              </div>
+              <div class="goal-card__field">
+                <span>Evidencia</span>
+                <strong>{{ goal.evidenceCount }}</strong>
+              </div>
+              <div class="goal-card__field">
+                <span>Val. alc.</span>
+                <strong>{{ formatAchievedPercent(goal) }}</strong>
+              </div>
+              <div class="goal-card__field">
+                <span>Punt.</span>
+                <strong>{{ formatCalculatedScore(goal) }}</strong>
+              </div>
+            </div>
+            <div class="goal-card__actions">
+              <a [routerLink]="cicloNavService.moduleRoute('metas', goal.id, 'evidencias')" class="btn btn--outline btn--sm btn--full">Evidencias</a>
+              @if (canReviewGoals()) {
+                <button type="button" class="btn btn--outline btn--sm btn--full" (click)="openCalificarModal(goal)">Calificar</button>
+              }
+              @if (canManageGoals()) {
+                <button type="button" class="btn btn--ghost btn--sm btn--full" (click)="openEditModal(goal.id)">Editar</button>
+              }
+              @if (hasSecondaryActions(goal)) {
+                <details class="actions-menu actions-menu--mobile">
+                  <summary class="actions-menu-summary">Mas acciones</summary>
+                  <div class="actions-menu__panel">
+                    @if (evaluatedIdFor(goal); as evaluatedId) {
+                      @if (canViewFinalEvaluations() || canViewDocuments() || canViewImprovements()) {
+                        <span class="actions-menu__group-label" role="presentation">Consulta</span>
+                      }
+                      @if (canViewFinalEvaluations()) {
+                        <a [routerLink]="cicloNavService.moduleRoute('evaluacion-final', evaluatedId)">
+                          <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
+                            <path d="M10 4.2c-3.6 0-6.6 2.4-7.7 5.8 1.1 3.4 4.1 5.8 7.7 5.8s6.6-2.4 7.7-5.8c-1.1-3.4-4.1-5.8-7.7-5.8Zm0 9.6a3.8 3.8 0 1 1 0-7.6 3.8 3.8 0 0 1 0 7.6Zm0-6a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z"/>
+                          </svg>
+                          Ver evaluacion
+                        </a>
+                      }
+                      @if (canViewDocuments()) {
+                        <a [routerLink]="cicloNavService.moduleRoute('documentos')" [queryParams]="{ evaluatedId: evaluatedId }">
+                          <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
+                            <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.4L11.6 2H6Zm5 1.2L14.8 7H12a1 1 0 0 1-1-1V3.2ZM7 10h6v1.5H7V10Zm0 3h4v1.5H7V13Z"/>
+                          </svg>
+                          Documentos
+                        </a>
+                      }
+                      @if (canViewImprovements()) {
+                        <a [routerLink]="cicloNavService.moduleRoute('oportunidades-mejora')" [queryParams]="{ evaluatedId: evaluatedId }">
+                          <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
+                            <path d="M10 2.4a5.6 5.6 0 0 0-3.4 10v1.4c0 .5.4 1 1 1H12.4c.6 0 1-.5 1-1v-1.4a5.6 5.6 0 0 0-3.4-10Zm-1.6 14.2c0 .5.4 1 1 1h1.2c.6 0 1-.5 1-1v-.4H8.4v.4Z"/>
+                          </svg>
+                          Oportunidades
+                        </a>
+                      }
+                    }
+                    @if (canRequestGoalChange()) {
+                      @if (canViewFinalEvaluations() || canViewDocuments() || canViewImprovements()) {
+                        <span class="actions-menu__divider" role="separator" aria-hidden="true"></span>
+                      }
+                      <span class="actions-menu__group-label" role="presentation">Trabajo</span>
+                      <button
+                        type="button"
+                        class="actions-menu__button"
+                        (click)="openChangeRequestModal(goal)"
+                      >
+                        <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="M4 14.5V16h1.5l7.7-7.7-1.5-1.5L4 14.5Zm10.9-7.8a1.1 1.1 0 0 0 0-1.6l-1-1a1.1 1.1 0 0 0-1.6 0l-.8.8L14 7.5l.9-.8Z"/>
+                        </svg>
+                        Solicitar modificacion
+                      </button>
+                    }
+                    @if (canSendGoalToOrh()) {
+                      <span class="actions-menu__divider" role="separator" aria-hidden="true"></span>
+                      <span class="actions-menu__group-label" role="presentation">Envio</span>
+                      <button
+                        type="button"
+                        class="actions-menu__button actions-menu__button--primary"
+                        (click)="openOrhSubmissionModal(goal)"
+                      >
+                        <svg class="actions-menu__icon" viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="M3.4 16.6 17 10 3.4 3.4 3.4 8.6 13 10l-9.6 1.4Z"/>
+                        </svg>
+                        Enviar a ORH
+                      </button>
+                    }
+                  </div>
+                </details>
+              }
+            </div>
+          </article>
+        }
+      </div>
+
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <div class="pagination__info">
+            Mostrando {{ (currentPage() - 1) * pageSize + 1 }}–{{ currentPageEnd() }} de {{ goals().length }}
+          </div>
+          <div class="pagination__controls">
+            <button type="button" class="btn btn--ghost btn--xs" (click)="goToPage(1)" [disabled]="currentPage() === 1" aria-label="Primera página">
+              <svg class="btn__icon" viewBox="0 0 20 20"><path d="M13.5 15.5 8 10l5.5-5.5-1.1-1.1L6 10l6.4 6.6 1.1-1.1ZM7 4.5H5.5v11H7v-11Z"/></svg>
+            </button>
+            <button type="button" class="btn btn--ghost btn--xs" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1" aria-label="Página anterior">
+              <svg class="btn__icon" viewBox="0 0 20 20"><path d="M12.5 15.5 7 10l5.5-5.5 1.1 1.1L9.2 10l4.4 4.4-1.1 1.1Z"/></svg>
+            </button>
+            <span class="pagination__page">{{ currentPage() }} / {{ totalPages() }}</span>
+            <button type="button" class="btn btn--ghost btn--xs" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()" aria-label="Página siguiente">
+              <svg class="btn__icon" viewBox="0 0 20 20"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+            </button>
+            <button type="button" class="btn btn--ghost btn--xs" (click)="goToPage(totalPages())" [disabled]="currentPage() === totalPages()" aria-label="Última página">
+              <svg class="btn__icon" viewBox="0 0 20 20"><path d="M6.5 4.5 12 10l-5.5 5.5 1.1 1.1L14 10 7.6 3.4 6.5 4.5ZM13 4.5h1.5v11H13v-11Z"/></svg>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </section>
+
+  @if (calificarModalOpen()) {
+    @if (ratingTargetGoal(); as tg) {
+    <div class="modal-backdrop" (click)="closeCalificarModal()"></div>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="goal-calificar-title">
+      <div class="modal__header">
+        <div>
+          <p class="modal__eyebrow">Metas</p>
+          <h2 id="goal-calificar-title">Valor alcanzado</h2>
+        </div>
+        <button type="button" class="modal__close" (click)="closeCalificarModal()" aria-label="Cerrar modal">
+          <svg viewBox="0 0 20 20"><path d="M14.3 5.7l-1-1L10 8l-3.3-3.3-1 1L9 9l-3.3 3.3 1 1L10 10l3.3 3.3 1-1L11 9l3.3-3.3Z"/></svg>
+        </button>
+      </div>
+      @if (ratingFormError()) {
+        <div class="alert alert--error" role="alert">
+          <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+          </svg>
+          <span>{{ ratingFormError() }}</span>
+        </div>
+      }
+      <div class="form-grid">
+        <label class="field field--full">
+          <span class="field__label">Meta</span>
+          <textarea class="field__readonly" rows="4" readonly>{{ tg.title }}</textarea>
+        </label>
+        <label class="field">
+          <span class="field__label">Valor</span>
+          <input type="text" class="field__readonly" readonly [value]="formatPercentPlain(tg.expectedValue)" />
+        </label>
+        <label class="field">
+          <span class="field__label">Peso</span>
+          <input type="text" class="field__readonly" readonly [value]="formatPercentPlain(tg.weight)" />
+        </label>
+        <label class="field field--full">
+          <span class="field__label">Valor alcanzado <span class="field__required">*</span></span>
+          <input
+            type="text"
+            inputmode="decimal"
+            [value]="ratingAchievedDraft()"
+            (input)="onRatingAchievedInput($event)"
+            placeholder="0"
+          />
+          <small class="field__hint">
+            Registre el valor alcanzado real (puede superar el valor meta).
+            El puntaje por meta no excederá 120 puntos.
+          </small>
+        </label>
+        <label class="field field--full">
+          <span class="field__label">Puntaje calculado</span>
+          <input type="text" class="field__readonly" readonly [value]="ratingPreviewScoreLabel()" />
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="closeCalificarModal()">Cancelar</button>
+        <button type="button" class="btn btn--primary" [disabled]="savingRating()" (click)="submitCalificarMeta()">
+          @if (savingRating()) {
+            <span class="loading-spinner loading-spinner--sm"></span>
+          }
+          Calificar
+        </button>
+      </div>
+    </section>
+    }
+  }
+
+  @if (modalOpen()) {
+    <div class="modal-backdrop" (click)="closeModal()"></div>
+    <section class="modal" role="dialog" aria-modal="true" aria-label="Formulario de meta">
+      <div class="modal__header">
+        <div>
+          <p class="modal__eyebrow">Metas</p>
+          <h2>{{ editingGoalId() ? 'Editar meta' : 'Nueva meta' }}</h2>
+          <p class="modal__subtitle">Use este formulario unico para registrar o actualizar metas.</p>
+        </div>
+        <button type="button" class="modal__close" (click)="closeModal()" aria-label="Cerrar modal">
+          <svg viewBox="0 0 20 20"><path d="M14.3 5.7l-1-1L10 8l-3.3-3.3-1 1L9 9l-3.3 3.3 1 1L10 10l3.3 3.3 1-1L11 9l3.3-3.3Z"/></svg>
+        </button>
+      </div>
+
+      @if (selectedGoal()) {
+        <div class="context-bar">
+          <div class="context-bar__item">
+            <span class="context-bar__label">Evaluador</span>
+            <span class="context-bar__value">{{ selectedGoal()!.evaluatorName }}</span>
+          </div>
+          <div class="context-bar__divider"></div>
+          <div class="context-bar__item">
+            <span class="context-bar__label">Evaluado</span>
+            <span class="context-bar__value">{{ selectedGoal()!.evaluatedName }}</span>
+          </div>
+          <div class="context-bar__divider"></div>
+          <div class="context-bar__item">
+            <span class="context-bar__label">Ciclo</span>
+            <span class="context-bar__value">{{ selectedGoal()!.cycleName }}</span>
+          </div>
+        </div>
+      }
+
+      @if (formError()) {
+        <div class="alert alert--error" role="alert">
+          <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+          </svg>
+          <span>{{ formError() }}</span>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="saveGoal()" class="form-grid">
+        <label class="field">
+          <span class="field__label">Asignación <span class="field__required">*</span></span>
+          <select formControlName="assignmentId">
+            <option [ngValue]="null">Seleccione</option>
+            @for (assignment of assignments(); track assignment.assignmentId) {
+              <option [ngValue]="assignment.assignmentId">
+                {{ assignment.evaluatedName }} - {{ assignment.cycleName }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Indicador <span class="field__required">*</span></span>
+          <div class="indicator-combo" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="indicator-combo__control"
+              [class.indicator-combo__control--placeholder]="!selectedIndicator()"
+              (click)="toggleIndicatorDropdown($event)"
+              [attr.aria-expanded]="indicatorDropdownOpen()"
+            >
+              <span>{{ selectedIndicatorLabel() || 'Buscar indicador...' }}</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M5.6 7.6 10 12l4.4-4.4 1.1 1.1L10 14.2 4.5 8.7l1.1-1.1Z"/>
+              </svg>
+            </button>
+
+            @if (indicatorDropdownOpen()) {
+              <div class="indicator-combo__panel">
+                <input
+                  #indicatorSearchInput
+                  type="text"
+                  [value]="indicatorSearch()"
+                  placeholder="Buscar indicador..."
+                  (input)="onIndicatorSearch($event)"
+                  (keydown.escape)="closeIndicatorDropdown()"
+                />
+                <div class="indicator-combo__list">
+                  @for (indicator of filteredIndicators(); track indicator.id) {
+                    <button type="button" class="indicator-combo__option" (click)="selectIndicator(indicator)">
+                      <strong>{{ indicator.code }}</strong>
+                      <span>{{ indicator.name }}</span>
+                    </button>
+                  } @empty {
+                    <div class="indicator-combo__empty">No se encontraron indicadores.</div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <input type="hidden" formControlName="indicatorId" />
+        </label>
+
+        <label class="field field--full">
+          <span class="field__label">Título <span class="field__required">*</span></span>
+          <input type="text" formControlName="title" placeholder="Titulo de la meta" />
+        </label>
+
+        <label class="field field--full">
+          <span class="field__label">Descripción</span>
+          <textarea rows="4" formControlName="description" placeholder="Descripcion opcional"></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Valor esperado <span class="field__required">*</span></span>
+          <input
+            type="text"
+            formControlName="expectedValue"
+            inputmode="decimal"
+            placeholder="0 a 100"
+            (input)="sanitizeExpectedValueControl()"
+          />
+          <small class="field__hint">{{ expectedValueHintText() }}</small>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Peso (%) <span class="field__required">*</span></span>
+          <input
+            type="text"
+            formControlName="weight"
+            inputmode="decimal"
+            placeholder="0 a 100%"
+            (input)="sanitizePercentControl('weight')"
+          />
+          <small class="field__hint">Ingrese un numero de 0 a 100. Puede incluir %.</small>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Plazo inicial <span class="field__required">*</span></span>
+          <input type="date" formControlName="startDate" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Plazo final <span class="field__required">*</span></span>
+          <input type="date" formControlName="endDate" />
+        </label>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving() || !canManageGoals()">
+            @if (saving()) {
+              <span class="loading-spinner loading-spinner--sm"></span>
+            }
+            {{ editingGoalId() ? 'Actualizar' : 'Registrar' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (changeRequestGoal(); as rqGoal) {
+    <div class="modal-backdrop goal-modal-backdrop--layered" role="presentation"></div>
+    <section
+      class="modal modal--operational"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="change-request-title"
+    >
+      <div class="modal__header">
+        <div>
+          <p class="modal__eyebrow modal__eyebrow--accent">Solicitud sobre meta</p>
+          <h2 id="change-request-title">Solicitar modificacion</h2>
+        </div>
+        <button
+          type="button"
+          class="modal__close modal__close--bordered"
+          aria-label="Cerrar"
+          [disabled]="changeRequestSubmitting()"
+          (click)="closeChangeRequestModal()"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="modal-panel modal-panel--muted">
+        <div class="modal-panel__kv">
+          <span>Meta</span>
+          <strong>{{ rqGoal.title }}</strong>
+        </div>
+        <div class="modal-panel__kv">
+          <span>Evaluado</span>
+          <strong>{{ rqGoal.evaluatedName || 'Sin evaluado' }}</strong>
+        </div>
+        <div class="modal-panel__kv">
+          <span>Indicador</span>
+          <strong>{{ rqGoal.indicatorName || 'Sin indicador' }}</strong>
+        </div>
+        <div class="modal-panel__kv">
+          <span>Valor esperado</span>
+          <strong>{{ rqGoal.expectedValue }}</strong>
+        </div>
+        <div class="modal-panel__kv">
+          <span>Peso</span>
+          <strong>{{ rqGoal.weight }}%</strong>
+        </div>
+      </div>
+
+      @if (changeRequestError()) {
+        <div class="alert alert--error modal-panel__alert" role="alert">
+          <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+          </svg>
+          <span>{{ changeRequestError() }}</span>
+        </div>
+      }
+
+      <form class="modal-form" (submit)="submitChangeRequest($event)">
+        <label class="modal-field">
+          <span>Tipo de modificacion</span>
+          <select
+            id="change-request-type"
+            [value]="changeRequestType()"
+            [disabled]="changeRequestSubmitting()"
+            (change)="updateChangeRequestType($event)"
+          >
+            <option value="">Seleccione una opcion</option>
+            @for (option of changeRequestTypes; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="modal-field">
+          <span>Motivo</span>
+          <textarea
+            id="change-request-reason"
+            rows="4"
+            maxlength="1000"
+            placeholder="Explique brevemente por que solicita la modificacion."
+            [value]="changeRequestReason()"
+            [disabled]="changeRequestSubmitting()"
+            (input)="updateChangeRequestReason($event)"
+          ></textarea>
+        </label>
+
+        <label class="modal-field">
+          <span>Comentario opcional</span>
+          <textarea
+            id="change-request-comment"
+            rows="3"
+            maxlength="1000"
+            placeholder="Agregue una precision adicional si corresponde."
+            [value]="changeRequestComment()"
+            [disabled]="changeRequestSubmitting()"
+            (input)="updateChangeRequestComment($event)"
+          ></textarea>
+        </label>
+
+        <div class="modal-form__actions">
+          <button
+            type="button"
+            class="btn btn--outline-neutral btn--sm"
+            [disabled]="changeRequestSubmitting()"
+            (click)="closeChangeRequestModal()"
+          >
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn--primary btn--sm" [disabled]="!canSubmitChangeRequest()">
+            {{ changeRequestSubmitting() ? 'Enviando...' : 'Enviar solicitud' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (orhSubmissionGoal(); as orhGoal) {
+    <div class="modal-backdrop goal-modal-backdrop--layered" role="presentation"></div>
+    <section
+      class="modal modal--operational"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="orh-submission-title"
+    >
+      <div class="modal__header">
+        <div>
+          <p class="modal__eyebrow modal__eyebrow--accent">Remision formal</p>
+          <h2 id="orh-submission-title">Enviar a ORH</h2>
+        </div>
+        <button
+          type="button"
+          class="modal__close modal__close--bordered"
+          aria-label="Cerrar"
+          [disabled]="orhSubmissionSubmitting()"
+          (click)="closeOrhSubmissionModal()"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="modal-panel modal-panel--muted">
+        <div class="modal-panel__kv">
+          <span>Meta</span>
+          <strong>{{ orhGoal.title }}</strong>
+        </div>
+        <div class="modal-panel__kv">
+          <span>Evaluado</span>
+          <strong>{{ orhGoal.evaluatedName || 'Sin evaluado' }}</strong>
+        </div>
+        <div class="modal-panel__kv">
+          <span>Indicador</span>
+          <strong>{{ orhGoal.indicatorName || 'Sin indicador' }}</strong>
+        </div>
+        <div class="modal-panel__kv">
+          <span>Valor esperado</span>
+          <strong>{{ orhGoal.expectedValue }}</strong>
+        </div>
+        <div class="modal-panel__kv">
+          <span>Peso</span>
+          <strong>{{ orhGoal.weight }}%</strong>
+        </div>
+      </div>
+
+      @if (orhSubmissionError()) {
+        <div class="alert alert--error modal-panel__alert" role="alert">
+          <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+          </svg>
+          <span>{{ orhSubmissionError() }}</span>
+        </div>
+      }
+
+      <form class="modal-form" (submit)="submitOrhSubmission($event)">
+        <p class="modal-form__help">
+          Esta accion registra la remision formal de la meta a ORH para conocimiento o atencion futura.
+        </p>
+
+        <label class="modal-field">
+          <span>Comentario opcional</span>
+          <textarea
+            id="orh-submission-comment"
+            rows="4"
+            maxlength="1000"
+            placeholder="Agregue un comentario breve para ORH si corresponde."
+            [value]="orhSubmissionComment()"
+            [disabled]="orhSubmissionSubmitting()"
+            (input)="updateOrhSubmissionComment($event)"
+          ></textarea>
+        </label>
+
+        <div class="modal-form__actions">
+          <button
+            type="button"
+            class="btn btn--outline-neutral btn--sm"
+            [disabled]="orhSubmissionSubmitting()"
+            (click)="closeOrhSubmissionModal()"
+          >
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn--primary btn--sm" [disabled]="!canSubmitOrhSubmission()">
+            {{ orhSubmissionSubmitting() ? 'Enviando...' : 'Enviar a ORH' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+</section>

@@ -1,0 +1,612 @@
+<section class="page">
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Navegación">
+    <a [routerLink]="cicloNavService.boardRoute()" class="breadcrumb__link">{{ cicloNavService.boardLabel() }}</a>
+    <span class="breadcrumb__sep" aria-hidden="true">/</span>
+    <a [routerLink]="cicloNavService.moduleRoute('evaluacion-final')" class="breadcrumb__link">Evaluacion Final</a>
+    <span class="breadcrumb__sep" aria-hidden="true">/</span>
+    @if (evaluatedId()) {
+      <a [routerLink]="cicloNavService.moduleRoute('evaluacion-final', evaluatedId()!)" class="breadcrumb__link">Detalle</a>
+      <span class="breadcrumb__sep" aria-hidden="true">/</span>
+    }
+    <span class="breadcrumb__current">Formatos</span>
+  </nav>
+
+  <!-- Page header -->
+  <div class="page__header">
+    <div class="page__header-left">
+      <h1>Documentos firmados (Formatos)</h1>
+      <p class="page__subtitle">
+        Consulta del estado de firma con Firma Peru, acciones sobre la solicitud y contingencia administrativa cuando corresponda.
+      </p>
+    </div>
+    <div class="page__actions">
+      <a [routerLink]="evaluatedId() ? cicloNavService.moduleRoute('evaluacion-final', evaluatedId()!) : cicloNavService.moduleRoute('evaluacion-final')" class="btn btn--outline-neutral btn--sm">
+        <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M9.5 4.5 4 10l5.5 5.5 1.1-1.1-3.6-3.6H16v-1.6H7l3.6-3.6-1.1-1.1Z"/>
+        </svg>
+        Volver al detalle
+      </a>
+    </div>
+  </div>
+
+  <app-cycle-context-bar />
+
+  @if (errorMessage()) {
+    <div class="alert alert--error" role="alert">
+      <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (currentRequest() && !currentRequest()!.integracionOficialDisponible) {
+    <div class="alert alert--info" role="status">
+      <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm1 11.6H9v-2h2v2Zm0-4H9V6.2h2v3.6Z"/>
+      </svg>
+      <span><strong>Integracion institucional pendiente.</strong> {{ currentRequest()!.mensajeIntegracion }}</span>
+    </div>
+  }
+
+  <!-- Context bar -->
+  <div class="context-bar">
+    <div class="context-bar__item">
+      <span class="context-bar__label">Evaluado seleccionado</span>
+      <span class="context-bar__value">{{ selectedEvaluationLabel() }}</span>
+    </div>
+    <div class="context-bar__divider"></div>
+    <div class="context-bar__item">
+      <span class="context-bar__label">Tipos documentales</span>
+      <span class="context-bar__value">{{ documentTypes().length }}</span>
+    </div>
+    <div class="context-bar__divider"></div>
+    <div class="context-bar__item">
+      <span class="context-bar__label">Solicitud actual</span>
+      <span class="context-bar__value">
+        @if (currentRequest()) {
+          <span class="status-badge"
+                [class.status-badge--progress]="isInProgressState(currentRequest()!.estadoFlujo)"
+                [class.status-badge--success]="isSuccessState(currentRequest()!.estadoFlujo)"
+                [class.status-badge--warning]="currentRequest()!.estadoFlujo === 'FIRMA_CANCELADA'"
+                [class.status-badge--danger]="currentRequest()!.estadoFlujo === 'ERROR_FIRMA'">
+            <span class="status-badge__dot"></span>
+            {{ currentRequest()!.estadoFlujo }}
+          </span>
+        } @else {
+          Sin solicitud
+        }
+      </span>
+    </div>
+    <div class="context-bar__divider"></div>
+    <div class="context-bar__item">
+      <span class="context-bar__label">Documentos activos</span>
+      <span class="context-bar__value">{{ signedDocumentsTotal() }}</span>
+    </div>
+  </div>
+
+  <section class="layout-grid">
+    <article class="panel">
+      <header class="panel__header">
+        <div class="panel__header-icon">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M4 14.5V16h1.5l7.7-7.7-1.5-1.5L4 14.5Zm10.9-7.8a1.1 1.1 0 0 0 0-1.6l-1-1a1.1 1.1 0 0 0-1.6 0l-.8.8L14 7.5l.9-.8Z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="panel__title">Flujo principal de firma</h2>
+          <p class="panel__desc">Iniciar firma, consultar estado y ver documentos asociados a la solicitud. La carga manual de contingencia está disponible cuando su perfil lo permite.</p>
+        </div>
+      </header>
+
+      <div class="selection-block">
+        <label class="field field--full">
+          <span class="field__label">Evaluado</span>
+          <select [formControl]="selectionForm.controls.evaluatedId">
+            <option [ngValue]="null">Seleccione un evaluado</option>
+            @for (evaluation of availableEvaluations(); track evaluation.evaluatedId) {
+              <option [ngValue]="evaluation.evaluatedId">
+                {{ evaluation.evaluatedName }} | {{ evaluation.cycleName }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <div class="form-actions form-actions--start">
+          <button
+            type="button"
+            class="btn btn--outline btn--sm"
+            (click)="applyEvaluatedSelection()"
+            [disabled]="loadingEvaluations() || !selectionForm.getRawValue().evaluatedId"
+          >
+            {{ loadingEvaluations() ? 'Cargando evaluados...' : 'Usar evaluado' }}
+          </button>
+        </div>
+      </div>
+
+      @if (!evaluatedId()) {
+        <div class="empty-state">
+          <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm1 11H9v-2h2v2Zm0-4H9V5h2v4Z"/>
+          </svg>
+          <p>Seleccione un evaluado para habilitar el flujo documental principal del lote.</p>
+        </div>
+      } @else {
+        @if (canRegisterSignedDocuments()) {
+          <div class="contingency-section">
+            <form [formGroup]="uploadForm" (ngSubmit)="submitUpload()" class="form-grid">
+              <label class="field field--full">
+                <span class="field__label">DESCRIPCION</span>
+                <textarea
+                  formControlName="descripcion"
+                  rows="3"
+                  maxlength="400"
+                  placeholder="Descripcion del documento a registrar"
+                ></textarea>
+                <small>Máximo 400 caracteres.</small>
+              </label>
+
+              <label class="field field--full">
+                <span class="field__label">Archivo firmado</span>
+                <input type="file" accept="application/pdf,.pdf" (change)="onFileSelected($event)" />
+                <small>{{ selectedFileName() || 'Solo PDF. El archivo se almacena fuera de Oracle y fuera del repo.' }}</small>
+              </label>
+
+              <div class="form-actions">
+                <button
+                  type="submit"
+                  class="btn btn--outline btn--sm"
+                  [disabled]="uploading() || uploadForm.invalid || !selectedFile()"
+                >
+                  {{ uploading() ? 'Registrando...' : 'Registrar' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        }
+
+        @if (!canPrepareDocuments()) {
+          <div class="alert alert--info" role="status">
+            <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm1 11.6H9v-2h2v2Zm0-4H9V6.2h2v3.6Z"/>
+            </svg>
+            <span>Su perfil puede consultar el flujo y usar contingencia si está habilitada; no puede crear nuevas solicitudes de preparación para firma desde esta pantalla.</span>
+          </div>
+        }
+
+        @if (currentRequest()) {
+          <article class="request-card">
+            <div class="record-card__head">
+              <div>
+                <span class="record-card__eyebrow">{{ currentRequest()!.tipoDocumento }}</span>
+                <strong>{{ currentRequest()!.nombreArchivoPreparado }}</strong>
+              </div>
+              <span
+                class="status-badge"
+                [class.status-badge--progress]="isInProgressState(currentRequest()!.estadoFlujo)"
+                [class.status-badge--success]="isSuccessState(currentRequest()!.estadoFlujo)"
+                [class.status-badge--warning]="currentRequest()!.estadoFlujo === 'FIRMA_CANCELADA'"
+                [class.status-badge--danger]="currentRequest()!.estadoFlujo === 'ERROR_FIRMA'"
+              >
+                <span class="status-badge__dot"></span>
+                {{ currentRequest()!.estadoFlujo }}
+              </span>
+            </div>
+
+            <div class="record-card__meta record-card__meta--grid">
+              <span>Resultado: #{{ currentRequest()!.idResultado }}</span>
+              <span>Proveedor: {{ currentRequest()!.proveedorFirma }}</span>
+              <span>Modo: {{ currentRequest()!.modoIntegracion }}</span>
+              <span>Solicitud: #{{ currentRequest()!.idSolicitudFirma }}</span>
+              <span>Transaccion: {{ currentRequest()!.idTransaccionExterna || 'Pendiente' }}</span>
+              <span>Solicitud: {{ currentRequest()!.fechaSolicitud || 'Pendiente' }}</span>
+              <span>Inicio firma: {{ currentRequest()!.fechaInicioFirma || 'Pendiente' }}</span>
+              <span>Retorno: {{ currentRequest()!.fechaRetorno || 'Pendiente' }}</span>
+              <span>Registro: {{ currentRequest()!.fechaRegistroDocumento || 'Pendiente' }}</span>
+            </div>
+
+            @if (currentRequest()!.mensajeResultadoFirma) {
+              <p class="request-card__message">{{ currentRequest()!.mensajeResultadoFirma }}</p>
+            }
+
+            <div class="action-group">
+              @if (currentRequest()!.documentoPreparadoDisponible) {
+                <button type="button" class="btn btn--outline btn--sm" (click)="openPreparedDocument()">
+                  Ver documento listo para firma
+                </button>
+              }
+              @if (canStartSignatureFlow()) {
+                <button
+                  type="button"
+                  class="btn btn--primary btn--sm"
+                  (click)="startSignature()"
+                  [disabled]="starting() || !currentRequest()!.puedeIniciarFirma"
+                >
+                  @if (starting()) {
+                    <span class="loading-spinner loading-spinner--sm"></span>
+                  }
+                  {{ starting() ? 'Iniciando...' : 'Iniciar firma' }}
+                </button>
+              }
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm"
+                (click)="refreshSignatureRequest()"
+                [disabled]="refreshingRequest()"
+              >
+                {{ refreshingRequest() ? 'Consultando...' : 'Consultar estado' }}
+              </button>
+              @if (currentRequest()!.urlFirma || lastStartInfo()?.urlFirma) {
+                <button type="button" class="btn btn--outline btn--sm" (click)="openFirmaPeru()">
+                  Abrir portal de Firma Peru
+                </button>
+              }
+              @if (canRegisterSignatureReturn() && currentRequest()!.puedeRegistrarRetorno && !currentRequest()!.retornoAutomaticoHabilitado) {
+                <button type="button" class="btn btn--outline btn--sm" (click)="openReturnModal()">
+                  Registrar resultado de firma
+                </button>
+              }
+              @if (currentRequest()!.idDocumentoFirmado) {
+                <a
+                  [routerLink]="cicloNavService.moduleRoute('documentos', 'firmados', currentRequest()!.idDocumentoFirmado!)"
+                  class="btn btn--outline btn--sm"
+                >
+                  Ver documento firmado
+                </a>
+              }
+            </div>
+
+            @if (currentRequest()!.estadoFlujo === 'ERROR_FIRMA') {
+              <div class="alert alert--error" role="alert">
+                <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+                </svg>
+                <span>La solicitud quedo con error. El sistema conserva la trazabilidad; para un nuevo intento coordine con quien gestione las solicitudes de firma en su entidad.</span>
+              </div>
+            }
+
+            @if (currentRequest()!.estadoFlujo === 'FIRMA_CANCELADA') {
+              <div class="alert alert--warning" role="status">
+                <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm1 11.6H9v-2h2v2Zm0-4H9V6.2h2v3.6Z"/>
+                </svg>
+                <span>La firma fue cancelada. Para reanudar o iniciar otro tramite, siga las indicaciones de su entidad o el canal de gestión documental.</span>
+              </div>
+            }
+          </article>
+        }
+      }
+    </article>
+
+    <article class="panel panel--formats-catalog">
+      <header class="panel__header">
+        <div class="panel__header-icon">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.4L11.6 2H6Zm5 1.2L14.8 7H12a1 1 0 0 1-1-1V3.2ZM7 10h6v1.5H7V10Zm0 3h4v1.5H7V13Z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="panel__title">Formatos disponibles</h2>
+          <p class="panel__desc">Catalogo documental minimo para descarga controlada.</p>
+        </div>
+      </header>
+
+      @if (loadingStatic()) {
+        <div class="loading-state loading-state--panel-tight">
+          <div class="loading-spinner"></div>
+          <span>Cargando catalogo documental...</span>
+        </div>
+      } @else if (catalogDisplayedTemplates().length) {
+        <div class="record-list record-list--format-catalog">
+          @for (template of catalogDisplayedTemplates(); track template.idPlantilla) {
+            <article class="record-card record-card--format-gdr">
+              <div class="record-card__format-head">
+                <strong>Formato GDR</strong>
+                <span class="status-badge status-badge--quiet">
+                  <span class="status-badge__dot"></span>
+                  PDF
+                </span>
+              </div>
+              <p>
+                Formato GDR automático acorde a los datos ingresados en el Sistema.
+              </p>
+              @if (!evaluatedId()) {
+                <p class="hint-text">Seleccione un evaluado y pulse <strong>Usar evaluado</strong> para generar el PDF con datos.</p>
+              }
+              <div class="record-card__cta">
+                <button
+                  type="button"
+                  class="btn btn--outline btn--compact"
+                  (click)="downloadFormatoGdrPdfFile()"
+                  [disabled]="downloadingFormatoGdr() || !evaluatedId() || !canPrepareDocuments()"
+                >
+                  @if (downloadingFormatoGdr()) {
+                    <span class="loading-spinner loading-spinner--inline"></span>
+                    Generando…
+                  } @else {
+                    Descargar Formato GDR
+                  }
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <div class="empty-state empty-state--panel-tight">
+          <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.4L11.6 2H6Zm5 1.2L14.8 7H12a1 1 0 0 1-1-1V3.2ZM7 10h6v1.5H7V10Zm0 3h4v1.5H7V13Z"/>
+          </svg>
+          <p>No hay plantillas activas registradas para el lote actual.</p>
+        </div>
+      }
+
+      <div class="signed-docs-in-panel">
+        <header class="panel__header signed-docs-in-panel__header">
+          <div class="panel__header-icon">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M4.7 10.8h10.6v-1.6H4.7v1.6Zm0-4h10.6V5.2H4.7v1.6Zm0 8h7.2v-1.6H4.7v1.6Z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="panel__title">Documentos firmados activos</h2>
+            <p class="panel__desc">Consulta minima de documentos vinculados al resultado consolidado del evaluado.</p>
+          </div>
+        </header>
+
+        @if (loadingDocuments()) {
+          <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <span>Cargando documentos firmados...</span>
+          </div>
+        } @else if (!evaluatedId()) {
+          <div class="empty-state">
+            <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm1 11H9v-2h2v2Zm0-4H9V5h2v4Z"/>
+            </svg>
+            <p>Seleccione un evaluado desde evaluacion final para ver documentos activos.</p>
+          </div>
+        } @else if (signedDocuments().length > 0) {
+          <div class="doc-table-scroll">
+            <div class="doc-table-wrap">
+            <table class="doc-table" role="table" aria-label="Documentos firmados activos">
+              <thead>
+                <tr>
+                  <th scope="col">NOMBRE</th>
+                  <th scope="col">DESCRIPCION</th>
+                  <th scope="col">FECHA</th>
+                  <th scope="col" class="doc-table__th-actions">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (document of signedDocuments(); track document.idDocumentoFirmado) {
+                  <tr>
+                    <td>
+                      <button
+                        type="button"
+                        class="doc-table__name-link"
+                        (click)="downloadSignedDocument(document)"
+                      >
+                        {{ document.nombreOriginal }}
+                      </button>
+                      <div class="doc-table__tipo">Tipo: {{ signedDocumentListTypeLabel(document) }}</div>
+                    </td>
+                    <td class="doc-table__desc">{{ document.descripcionContingencia || '—' }}</td>
+                    <td class="doc-table__fecha">{{ document.fechaCarga | date: 'dd/MM/yyyy' }}</td>
+                    <td class="doc-table__actions">
+                      @if (canRegisterSignedDocuments()) {
+                        <div class="doc-actions-menu">
+                          <button
+                            type="button"
+                            class="doc-actions-menu__trigger"
+                            (click)="toggleRowActionsMenu($event, document.idDocumentoFirmado)"
+                            [attr.aria-expanded]="openActionsMenuId() === document.idDocumentoFirmado"
+                            aria-haspopup="true"
+                            [attr.aria-label]="'Acciones para ' + document.nombreOriginal"
+                          >
+                            <svg viewBox="0 0 20 20" aria-hidden="true" class="doc-actions-menu__icon">
+                              <path d="M3 5h14v1.5H3V5Zm0 4.2h14v1.5H3V9.2Zm0 4.3h14V15H3v-1.5Z"/>
+                            </svg>
+                          </button>
+                          @if (openActionsMenuId() === document.idDocumentoFirmado && actionsMenuViewportPosition(); as menuVp) {
+                            <div
+                              class="doc-actions-menu__popover doc-actions-menu__popover--fixed"
+                              role="menu"
+                              [style.top.px]="menuVp.top"
+                              [style.right.px]="menuVp.right"
+                              (click)="$event.stopPropagation()"
+                            >
+                              <button type="button" role="menuitem" class="doc-actions-menu__item" (click)="onFirmarMenuClick($event, document)">
+                                <svg class="doc-actions-menu__item-icon" viewBox="0 0 20 20" aria-hidden="true">
+                                  <path d="M12.5 3.2c.8 0 1.5.4 2 1l1.3 1.3c.6.6 1 1.4 1 2.3 0 .9-.4 1.7-1 2.3l-8.2 8.2H3.5v-4.2l8.1-8.1c.6-.6 1.4-1 2.3-1 .1 0 .3 0 .4.1Zm-.3 1.6a.9.9 0 0 0-.6.3L4.9 12.8v1.9h1.9l6.7-6.7a.5.5 0 0 0 0-.7L11.3 5a.5.5 0 0 0-.35-.15Z"/>
+                                </svg>
+                                Firmar
+                              </button>
+                              <button type="button" role="menuitem" class="doc-actions-menu__item doc-actions-menu__item--danger" (click)="deleteSignedDocumentRow($event, document)">
+                                <svg class="doc-actions-menu__item-icon" viewBox="0 0 20 20" aria-hidden="true">
+                                  <path d="M7 2.2h6v1.5h4v1.5H3V3.7h4v-1.5Zm-1.5 4.5h11l-.8 11.2H6.3l-.8-11.2Zm2.2 2v6h1.2v-6H7.7Zm3.4 0v6H12v-6h-1Z"/>
+                                </svg>
+                                Eliminar
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <span class="doc-table__actions-empty">—</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            </div>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M4.7 10.8h10.6v-1.6H4.7v1.6Zm0-4h10.6V5.2H4.7v1.6Zm0 8h7.2v-1.6H4.7v1.6Z"/>
+            </svg>
+            <p>Aun no hay documentos firmados activos para el evaluado seleccionado.</p>
+          </div>
+        }
+
+        @if (!loadingDocuments() && signedDocumentsPage(); as sdp) {
+          @if (sdp.totalPages > 1) {
+            <nav class="signed-docs-pager" aria-label="Paginacion de documentos firmados activos">
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm signed-docs-pager__btn"
+                [disabled]="sdp.first"
+                (click)="goToSignedDocumentsPage(sdp.number - 1)"
+              >
+                Anterior
+              </button>
+              <span class="signed-docs-pager__status">Pagina {{ sdp.number + 1 }} de {{ sdp.totalPages }}</span>
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm signed-docs-pager__btn"
+                [disabled]="sdp.last"
+                (click)="goToSignedDocumentsPage(sdp.number + 1)"
+              >
+                Siguiente
+              </button>
+            </nav>
+          }
+        }
+      </div>
+    </article>
+  </section>
+
+  @if (returnModalOpen()) {
+    <div class="modal-backdrop" (click)="closeReturnModal()"></div>
+    <section class="modal" role="dialog" aria-modal="true" aria-label="Registrar resultado de firma">
+      <div class="modal__header">
+        <div>
+          <p class="modal__eyebrow">Subflujo de firma</p>
+          <h2>Registrar resultado de firma</h2>
+          <p class="modal__subtitle">
+            Use esta vista solo mientras el retorno automatico oficial siga pendiente por dependencia institucional externa.
+          </p>
+        </div>
+        <button type="button" class="modal__close" (click)="closeReturnModal()" aria-label="Cerrar modal">
+          <svg viewBox="0 0 20 20"><path d="M14.3 5.7l-1-1L10 8l-3.3-3.3-1 1L9 9l-3.3 3.3 1 1L10 10l3.3 3.3 1-1L11 9l3.3-3.3Z"/></svg>
+        </button>
+      </div>
+
+      <form [formGroup]="returnForm" (ngSubmit)="submitReturn()" class="form-grid">
+        <label class="field">
+          <span class="field__label">Estado de retorno</span>
+          <select formControlName="codigoEstadoFlujo" (change)="onReturnStateChange()">
+            <option value="FIRMADO">FIRMADO</option>
+            <option value="ERROR_FIRMA">ERROR_FIRMA</option>
+            <option value="FIRMA_CANCELADA">FIRMA_CANCELADA</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Codigo resultado</span>
+          <input type="text" formControlName="codigoResultadoFirma" />
+        </label>
+
+        <label class="field field--full">
+          <span class="field__label">Mensaje</span>
+          <input type="text" formControlName="mensajeResultadoFirma" />
+        </label>
+
+        @if (returnForm.get('codigoEstadoFlujo')?.value === 'FIRMADO') {
+          <label class="field field--full">
+            <span class="field__label">Documento firmado</span>
+            <input type="file" accept="application/pdf,.pdf" (change)="onReturnFileSelected($event)" />
+            <small>{{ returnFileName() || 'Adjunte el PDF firmado retornado por la plataforma externa.' }}</small>
+          </label>
+        }
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="closeReturnModal()">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="returning()">
+            @if (returning()) {
+              <span class="loading-spinner loading-spinner--sm"></span>
+            }
+            {{ returning() ? 'Registrando...' : 'Registrar retorno' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (firmarModalOpen()) {
+    <div class="modal-backdrop" (click)="closeFirmarModal()"></div>
+    <section class="modal modal--firmar" role="dialog" aria-modal="true" aria-labelledby="firmar-modal-title">
+      <div class="modal__header">
+        <div>
+          <h2 id="firmar-modal-title" class="modal__header-title-plain">Firmar archivo</h2>
+          @if (firmarTargetDocument(); as fd) {
+            <p class="modal__subtitle firmar-modal__file-name">{{ fd.nombreOriginal }}</p>
+          }
+        </div>
+        <button type="button" class="modal__close" (click)="closeFirmarModal()" aria-label="Cerrar modal">
+          <svg viewBox="0 0 20 20"><path d="M14.3 5.7l-1-1L10 8l-3.3-3.3-1 1L9 9l-3.3 3.3 1 1L10 10l3.3 3.3 1-1L11 9l3.3-3.3Z"/></svg>
+        </button>
+      </div>
+
+      <div class="firmar-modal__body">
+        <label class="field field--full">
+          <span class="field__label">Oficina</span>
+          @if (loadingFirmarCatalog()) {
+            <div class="loading-state loading-state--panel-tight">
+              <div class="loading-spinner"></div>
+              <span>Cargando oficinas...</span>
+            </div>
+          } @else if (firmarOrgCatalogError()) {
+            <p class="firmar-catalog-error">{{ firmarOrgCatalogError() }}</p>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="retryFirmarOfficeCatalog()">
+              Reintentar
+            </button>
+          } @else if (firmarOfficeOptions().length === 0) {
+            <p class="hint-text">No hay oficinas disponibles.</p>
+          } @else {
+            <select
+              class="firmar-select"
+              [value]="firmarOfficeSelectValue()"
+              (change)="onFirmarOfficeSelect($event)"
+              aria-label="Seleccionar oficina para la firma"
+            >
+              <option value="">Seleccione una oficina</option>
+              @for (row of firmarOfficeOptions(); track row.id) {
+                <option [value]="row.id.toString()">{{ row.name }}</option>
+              }
+            </select>
+          }
+        </label>
+
+        <label class="field field--full">
+          <span class="field__label">Motivo de la firma</span>
+          <select class="firmar-select" [value]="firmarMotivo()" (change)="onFirmarMotivoSelect($event)">
+            @for (opt of firmarMotivoOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field field--full">
+          <span class="field__label">Apariencia de la firma</span>
+          <select class="firmar-select" [value]="firmarApariencia()" (change)="onFirmarAparienciaSelect($event)">
+            @for (opt of firmarAparienciaOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <div class="modal__footer firmar-modal__footer">
+        <button type="button" class="btn btn--ghost" (click)="closeFirmarModal()">Cancelar</button>
+        <button type="button" class="btn btn--primary firmar-modal__send" (click)="submitFirmarArchivo()">
+          <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M12.5 3.2c.8 0 1.5.4 2 1l1.3 1.3c.6.6 1 1.4 1 2.3 0 .9-.4 1.7-1 2.3l-8.2 8.2H3.5v-4.2l8.1-8.1c.6-.6 1.4-1 2.3-1 .1 0 .3 0 .4.1Zm-.3 1.6a.9.9 0 0 0-.6.3L4.9 12.8v1.9h1.9l6.7-6.7a.5.5 0 0 0 0-.7L11.3 5a.5.5 0 0 0-.35-.15Z"/>
+          </svg>
+          Enviar
+        </button>
+      </div>
+    </section>
+  }
+</section>

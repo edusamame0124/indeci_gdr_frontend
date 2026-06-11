@@ -1,0 +1,87 @@
+<section class="page">
+  <div class="page__header">
+    <div>
+      <p class="page__eyebrow">RRHH / ORH base</p>
+      <h1>Asignaciones</h1>
+      <p class="page__subtitle">
+        Relaciones activas del ciclo vigente para operar metas, con visualizacion clara en
+        escritorio, tablet y movil.
+      </p>
+    </div>
+    <a [routerLink]="cicloNavService.boardRoute()" class="page__link">Volver</a>
+  </div>
+
+  <app-cycle-context-bar />
+  @if (errorMessage()) {
+    <div class="page__state page__state--error">{{ errorMessage() }}</div>
+  } @else if (loading()) {
+    <div class="page__state">Cargando asignaciones...</div>
+  } @else {
+    <section class="table-card">
+      <div class="table-card__header">
+        <div>
+          <h2>Listado</h2>
+          <p>Revise las relaciones evaluador-evaluado disponibles para el ciclo activo.</p>
+        </div>
+      </div>
+
+      <div class="desktop-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Ciclo</th>
+              <th>Evaluador</th>
+              <th>Evaluado</th>
+              <th>Unidad</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (assignment of assignments(); track assignment.assignmentId) {
+              <tr>
+                <td>{{ assignment.cycleName }}</td>
+                <td>{{ assignment.evaluatorName }}</td>
+                <td>{{ assignment.evaluatedName }}</td>
+                <td>{{ assignment.orgUnitName }}</td>
+                <td><span class="status-pill">{{ assignment.status }}</span></td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5">No hay asignaciones activas para el ciclo actual.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-cards">
+        @for (assignment of assignments(); track assignment.assignmentId) {
+          <article class="assignment-card">
+            <div class="assignment-card__row">
+              <span>Ciclo</span>
+              <strong>{{ assignment.cycleName }}</strong>
+            </div>
+            <div class="assignment-card__row">
+              <span>Evaluador</span>
+              <strong>{{ assignment.evaluatorName }}</strong>
+            </div>
+            <div class="assignment-card__row">
+              <span>Evaluado</span>
+              <strong>{{ assignment.evaluatedName }}</strong>
+            </div>
+            <div class="assignment-card__row">
+              <span>Unidad</span>
+              <strong>{{ assignment.orgUnitName }}</strong>
+            </div>
+            <div class="assignment-card__row">
+              <span>Estado</span>
+              <strong><span class="status-pill">{{ assignment.status }}</span></strong>
+            </div>
+          </article>
+        } @empty {
+          <div class="page__state">No hay asignaciones activas para el ciclo actual.</div>
+        }
+      </div>
+    </section>
+  }
+</section>

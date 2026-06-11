@@ -13,6 +13,7 @@ import {
 import { qualificationOptionsForEvidenceType } from '../../../../core/evidences/evidence-qualification.constants';
 import { EvidencesService } from '../../../../core/evidences/evidences.service';
 import { UiToastService } from '../../../../shared/ui/ui-toast.service';
+import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
 
 @Component({
   selector: 'app-evidence-list',
@@ -23,9 +24,9 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     <section class="page">
       <!-- Breadcrumb -->
       <nav class="breadcrumb" aria-label="Navegación">
-        <a routerLink="/dashboard" class="breadcrumb__link">Inicio</a>
+        <a [routerLink]="cicloNavService.boardRoute()" class="breadcrumb__link">{{ cicloNavService.boardLabel() }}</a>
         <span class="breadcrumb__sep" aria-hidden="true">/</span>
-        <a routerLink="/dashboard/goals" class="breadcrumb__link">Metas</a>
+        <a [routerLink]="cicloNavService.moduleRoute('metas')" class="breadcrumb__link">Metas</a>
         <span class="breadcrumb__sep" aria-hidden="true">/</span>
         <span class="breadcrumb__current">Evidencias</span>
       </nav>
@@ -37,7 +38,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
           <p class="page__subtitle">Registro y seguimiento funcional de evidencias.</p>
         </div>
         <div class="page__actions">
-          <a routerLink="/dashboard/goals" class="btn btn--outline-neutral btn--sm">
+          <a [routerLink]="cicloNavService.moduleRoute('metas')" class="btn btn--outline-neutral btn--sm">
             <svg class="btn__icon" viewBox="0 0 20 20" aria-hidden="true">
               <path d="M9.5 4.5 4 10l5.5 5.5 1.1-1.1-3.6-3.6H16v-1.6H7l3.6-3.6-1.1-1.1Z"/>
             </svg>
@@ -604,6 +605,7 @@ export class EvidenceListComponent {
   private readonly goalsService = inject(GoalsService);
   private readonly evidencesService = inject(EvidencesService);
   private readonly toastService = inject(UiToastService);
+  readonly cicloNavService = inject(CicloNavService);
 
   readonly goal = signal<GoalDetail | null>(null);
   readonly evidences = signal<EvidenceSummary[]>([]);
@@ -784,7 +786,7 @@ export class EvidenceListComponent {
   }
 
   openDetail(evidenceId: number): void {
-    void this.router.navigate(['/dashboard/evidencias', evidenceId]);
+    void this.router.navigate(this.cicloNavService.moduleRoute('evidencias', String(evidenceId)));
   }
 
   closeModal(): void {
@@ -915,7 +917,7 @@ export class EvidenceListComponent {
   private loadData(): void {
     this.loading.set(true);
     this.errorMessage.set('');
-    this.goalsService.getGoal(this.goalId).subscribe({
+    this.goalsService.getGoal(this.goalId, this.cicloNavService.cicloId()!).subscribe({
       next: (goal: GoalDetail) => {
         this.goal.set(goal);
         this.loadEvidences();

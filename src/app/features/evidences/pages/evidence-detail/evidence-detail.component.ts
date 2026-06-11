@@ -11,6 +11,8 @@ import {
 import { EvidencesService } from '../../../../core/evidences/evidences.service';
 import { UiToastService } from '../../../../shared/ui/ui-toast.service';
 
+import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
+
 @Component({
   selector: 'app-evidence-detail',
   standalone: true,
@@ -20,7 +22,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     <section class="page">
       <!-- Breadcrumb navigation -->
       <nav class="breadcrumb" aria-label="Navegación">
-        <a [routerLink]="['/dashboard']" class="breadcrumb__link">Inicio</a>
+        <a [routerLink]="cicloNavService.boardRoute()" class="breadcrumb__link">{{ cicloNavService.boardLabel() }}</a>
         <span class="breadcrumb__sep" aria-hidden="true">/</span>
         <a [routerLink]="backToGoalLink()" class="breadcrumb__link">Evidencias</a>
         <span class="breadcrumb__sep" aria-hidden="true">/</span>
@@ -693,6 +695,7 @@ export class EvidenceDetailComponent {
   private readonly authService = inject(AuthService);
   private readonly evidencesService = inject(EvidencesService);
   private readonly toastService = inject(UiToastService);
+  readonly cicloNavService = inject(CicloNavService);
 
   readonly evidence = signal<EvidenceDetail | null>(null);
   readonly loading = signal(true);
@@ -761,7 +764,9 @@ export class EvidenceDetailComponent {
 
   backToGoalLink(): string[] {
     const goalId = this.evidence()?.goalId;
-    return goalId ? ['/dashboard/metas', String(goalId), 'evidencias'] : ['/dashboard/goals'];
+    return goalId
+      ? this.cicloNavService.moduleRoute('metas', String(goalId), 'evidencias')
+      : this.cicloNavService.moduleRoute('metas');
   }
 
   reviewQualificationDisplay(review: EvidenceReview): string | null {

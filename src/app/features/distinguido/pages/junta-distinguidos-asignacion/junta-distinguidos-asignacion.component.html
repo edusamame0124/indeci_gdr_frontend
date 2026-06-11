@@ -1,0 +1,159 @@
+<section class="workspace">
+  <div class="workspace__container">
+    <nav class="breadcrumb" aria-label="Ruta">
+      <a [routerLink]="cicloNavService.boardRoute()">{{ cicloNavService.boardLabel() }}</a>
+      <span>/</span>
+      <span>Junta de Directivos · Rendimiento distinguido</span>
+    </nav>
+
+    <header class="workspace__hero">
+      <h1 class="workspace__title">Decisión institucional de Rendimiento distinguido</h1>
+      <p class="workspace__subtitle">
+        Seleccione evaluados elegibles (buen rendimiento, calificación notificada y marcador de requisitos 8.2
+        confirmado por ORH). Respeta cupo proyectado desde el número de servidoras con evaluación notificada en el ciclo.
+      </p>
+      <p class="workspace__norma">Base normativa: RPE 068-2020-SERVIR-PE Art. 50 · VAL-08</p>
+      <div class="acta-download" role="group" aria-label="Descarga de acta de la Junta">
+        @if (downloadError()) {
+          <div class="alerta alerta--error alerta--acta" role="alert" aria-live="polite">
+            {{ downloadError() }}
+          </div>
+        }
+        <button
+          type="button"
+          class="btn btn--secondary btn--acta"
+          (click)="descargarActaJunta()"
+          [disabled]="descargandoActa() || loading()"
+          [attr.aria-busy]="descargandoActa()"
+          aria-label="Descargar acta de la Junta de Directivos en PDF con los servidores distinguidos del ciclo"
+        >
+          @if (descargandoActa()) {
+            Generando acta...
+          } @else {
+            Descargar acta de la Junta (PDF)
+          }
+        </button>
+      </div>
+    </header>
+
+    <app-cycle-context-bar />
+
+    @if (error()) {
+      <div class="alerta alerta--error" role="alert">{{ error() }}</div>
+    }
+    @if (success()) {
+      <div class="alerta alerta--ok" role="status">{{ success() }}</div>
+    }
+
+    @if (snapshot(); as s) {
+      @if (s.bloqueoVal08Activo) {
+        <div class="alerta alerta--warning" role="alert">
+          <strong>Bloqueo VAL-08:</strong>
+          {{ s.candidatosConConfirmacionPendiente }} candidato(s) elegible(s) tienen confirmación de calificación
+          pendiente ante el CIE. No puede seleccionarlos hasta que el CIE registre su decisión definitiva.
+        </div>
+      }
+      <div class="resumen-card">
+        <div class="resumen-card__item">
+          <span class="resumen-card__label">Universo notificado</span>
+          <span class="resumen-card__value">{{ s.notifiedUniverseTotal }}</span>
+        </div>
+        <div class="resumen-card__item">
+          <span class="resumen-card__label">Máximo distinguidos</span>
+          <span class="resumen-card__value">{{ s.maxDistinguidosSlots }}</span>
+        </div>
+        <div class="resumen-card__item">
+          <span class="resumen-card__label">Restantes en ciclo</span>
+          <span class="resumen-card__value">{{ s.remainingDistinguidoSlots }}</span>
+        </div>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="loading-state">Cargando resultados institucionales...</div>
+    } @else {
+      @if (selectableRows(); as list) {
+      <div class="tabla-wrap">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th aria-label="Selección"></th>
+              <th>Evaluado</th>
+              <th>Puntaje</th>
+              <th>Confirmación (VAL-08)</th>
+              <th>Elegibilidad</th>
+              <th>Rango institucional</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of list; track row.finalEvaluationId) {
+              <tr [class.tabla__row--bloqueada]="row.bloqueadoPorVal08">
+                <td>
+                  <input
+                    type="checkbox"
+                    [checked]="selected().has(row.finalEvaluationId)"
+                    [disabled]="row.bloqueadoPorVal08"
+                    [attr.aria-label]="'Seleccionar a ' + row.evaluatedDisplayName"
+                    (change)="toggle(row, $event)"
+                  />
+                </td>
+                <td>{{ row.evaluatedDisplayName }}</td>
+                <td>{{ row.consolidatedScore | number: '1.2-4' }}</td>
+                <td>
+                  <span
+                    class="badge badge--confirmacion"
+                    [attr.data-estado]="row.estadoConfirmacion"
+                  >
+                    {{ row.estadoConfirmacionLabel }}
+                  </span>
+                </td>
+                <td>{{ row.eligibleForDistinguidoPool ? 'Lista ORH recomendada' : 'Sin elegibilidad' }}</td>
+                <td>{{ row.rankEligible || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (!confirmandoAsignacion()) {
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="assigning() || selected().size === 0"
+            (click)="iniciarAsignacion()"
+          >
+            Asignar Rendimiento distinguido a seleccionados
+          </button>
+        </div>
+      } @else {
+        <div class="confirmacion-inline" role="alertdialog" aria-label="Confirmar asignación distinguido">
+          <p class="confirmacion-inline__texto">
+            ¿Confirma la asignación de Rendimiento distinguido a
+            <strong>{{ selected().size }}</strong> evaluado(s) seleccionado(s)?
+            Esta decisión institucional actualizará la calificación cualitativa en el ciclo activo.
+          </p>
+          <div class="confirmacion-inline__acciones">
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="assigning()"
+              (click)="submit()"
+            >
+              {{ assigning() ? 'Registrando...' : 'Sí, confirmar asignación' }}
+            </button>
+            <button
+              type="button"
+              class="btn btn--secondary"
+              [disabled]="assigning()"
+              (click)="cancelarAsignacion()"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      }
+      }
+    }
+  </div>
+</section>

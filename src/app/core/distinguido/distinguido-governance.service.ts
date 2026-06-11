@@ -16,21 +16,39 @@ import {
 export class DistinguidoGovernanceService {
   private readonly http = inject(HttpClient);
 
-  getCandidatos(): Observable<DistinguidoCandidatosResponse> {
+  getCandidatos(cycleId: number): Observable<DistinguidoCandidatosResponse> {
     return this.http
-      .get<ApiResponse<DistinguidoCandidatosResponse>>(`${environment.apiBaseUrl}/distinguidos/candidatos`)
+      .get<ApiResponse<DistinguidoCandidatosResponse>>(`${environment.apiBaseUrl}/distinguidos/candidatos`, {
+        params: { cycleId: String(cycleId) }
+      })
       .pipe(map((r) => r.data));
   }
 
-  patchRequisitos(assignmentId: number, payload: RequisitosDistinguidoRequest): Observable<void> {
+  patchRequisitos(assignmentId: number, cycleId: number, payload: RequisitosDistinguidoRequest): Observable<void> {
     return this.http
-      .patch<ApiResponse<null>>(`${environment.apiBaseUrl}/distinguidos/candidatos/${assignmentId}/requisitos`, payload)
+      .patch<ApiResponse<null>>(
+        `${environment.apiBaseUrl}/distinguidos/candidatos/${assignmentId}/requisitos`,
+        payload,
+        { params: { cycleId: String(cycleId) } }
+      )
       .pipe(map(() => undefined));
   }
 
-  asignar(payload: AsignarDistinguidoRequest): Observable<AsignarDistinguidoResultResponse> {
+  asignar(cycleId: number, payload: AsignarDistinguidoRequest): Observable<AsignarDistinguidoResultResponse> {
     return this.http
-      .post<ApiResponse<AsignarDistinguidoResultResponse>>(`${environment.apiBaseUrl}/distinguidos/asignar`, payload)
+      .post<ApiResponse<AsignarDistinguidoResultResponse>>(
+        `${environment.apiBaseUrl}/distinguidos/asignar`,
+        payload,
+        { params: { cycleId: String(cycleId) } }
+      )
       .pipe(map((r) => r.data));
+  }
+
+  /** P6-05 — Acta PDF de la Junta (servidores con Rendimiento distinguido). */
+  downloadActaJuntaPdf(cycleId: number): Observable<Blob> {
+    return this.http.get(`${environment.apiBaseUrl}/distinguidos/acta-junta-pdf`, {
+      params: { cycleId: String(cycleId) },
+      responseType: 'blob'
+    });
   }
 }

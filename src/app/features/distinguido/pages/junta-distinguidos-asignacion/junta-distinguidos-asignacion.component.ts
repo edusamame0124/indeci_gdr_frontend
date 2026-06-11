@@ -5,106 +5,25 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { DistinguidoGovernanceService } from '../../../../core/distinguido/distinguido-governance.service';
 import type { DistinguidoCandidatoFila, DistinguidoCandidatosResponse } from '../../../../core/distinguido/distinguido-governance.models';
+import { downloadBlob } from '../../../../shared/utils/download-blob.util';
+import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
+import { CycleContextBarComponent } from '../../../../shared/ui/cycle-context-bar.component';
 
+/**
+ * P5 — Junta: asignación de Rendimiento distinguido con bloqueo VAL-08.
+ */
 @Component({
   selector: 'app-junta-distinguidos-asignacion',
   standalone: true,
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, CycleContextBarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: `
-    .panel { padding: 1rem 1.25rem 2rem; max-width: 1200px; margin: 0 auto; }
-    .muted { opacity: 0.78; font-size: 0.88rem; }
-    .banner { background: #fff; border: 1px solid #dfe5ef; border-radius: 14px; padding: 1rem 1.1rem; margin-bottom: 1rem; display: grid; gap: 0.35rem; }
-    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e4e9f2; margin-bottom: 1rem; }
-    th, td { text-align: left; padding: 0.55rem 0.65rem; font-size: 0.86rem; }
-    thead { background: #f5f7fb; }
-    tr + tr td { border-top: 1px solid #eef1f7; }
-    .primary { padding: 0.55rem 1.25rem; border-radius: 10px; border: none; background: #163c5c; color: #fff; font-weight: 700; cursor: pointer; }
-    .primary[disabled] { opacity: 0.45; cursor: not-allowed; }
-    .breadcrumb { margin-bottom: 1rem; font-size: 0.86rem; }
-    .breadcrumb a { color: #7f1714; }
-  `,
-  template: `
-    <section class="panel">
-      <nav class="breadcrumb" aria-label="Ruta">
-        <a routerLink="/dashboard">Dashboard</a>
-        <span> / Junta de Directivos · Rendimiento distinguido</span>
-      </nav>
-
-      <header>
-        <h1>Decisión institucional de Rendimiento distinguido</h1>
-        <p class="muted">
-          Seleccione evaluados elegibles (buen rendimiento, calificación notificada y marcador de requisitos 8.2
-          cumplimiento confirmado por ORH). Respeta cupo proyectado desde el número de servidoras con evaluación
-          notificada en el ciclo.
-        </p>
-      </header>
-
-      @if (error(); as err) {
-        <div class="alert alert--error" role="alert"><span>{{ err }}</span></div>
-      }
-      @if (success(); as ok) {
-        <div class="alert alert--success" role="status"><span>{{ ok }}</span></div>
-      }
-
-      @if (snapshot(); as s) {
-        <div class="banner">
-          <strong>Notificado (universo para el cupo):</strong> {{ s.notifiedUniverseTotal }} ·
-          <strong>Máximo distinguidos:</strong>
-          {{ s.maxDistinguidosSlots }} · <strong>Restantes en este ciclo:</strong>
-          {{ s.remainingDistinguidoSlots }}
-        </div>
-      }
-
-      @if (loading()) {
-        <p class="muted">Cargando resultados institucionales...</p>
-      } @else {
-        @if (selectableRows(); as list) {
-          <table>
-            <thead>
-              <tr>
-                <th aria-label="Selección"></th>
-                <th>Evaluado</th>
-                <th>Puntaje</th>
-                <th>Elegibilidad</th>
-                <th>Rango institucional</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of list; track row.finalEvaluationId) {
-                <tr>
-                  <td>
-                    <input
-                      type="checkbox"
-                      [checked]="selected().has(row.finalEvaluationId)"
-                      (change)="toggle(row.finalEvaluationId, $event)"
-                    />
-                  </td>
-                  <td>{{ row.evaluatedDisplayName }}</td>
-                  <td>{{ row.consolidatedScore | number: '1.2-4' }}</td>
-                  <td>{{ row.eligibleForDistinguidoPool ? 'Lista ORH recomendada' : 'Sin elegibilidad' }}</td>
-                  <td>{{ row.rankEligible || '—' }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-
-          <button
-            type="button"
-            class="primary"
-            [disabled]="assigning() || selected().size === 0"
-            (click)="submit()"
-          >
-            Asignar Rendimiento distinguido a seleccionados
-          </button>
-        }
-      }
-    </section>
-  `
+  templateUrl: './junta-distinguidos-asignacion.component.html',
+  styleUrl: './junta-distinguidos-asignacion.component.css'
 })
 export class JuntaDistinguidosAsignacionComponent {
   private readonly gov = inject(DistinguidoGovernanceService);
   private readonly auth = inject(AuthService);
+  readonly cicloNavService = inject(CicloNavService);
 
   readonly snapshot = signal<DistinguidoCandidatosResponse | null>(null);
   readonly loading = signal(true);
@@ -112,6 +31,9 @@ export class JuntaDistinguidosAsignacionComponent {
   readonly success = signal<string | null>(null);
   readonly selected = signal(new Set<number>());
   readonly assigning = signal(false);
+  readonly confirmandoAsignacion = signal(false);
+  readonly descargandoActa = signal(false);
+  readonly downloadError = signal<string | null>(null);
 
   readonly selectableRows = computed(() => {
     const snap = this.snapshot();
@@ -122,7 +44,6 @@ export class JuntaDistinguidosAsignacionComponent {
   });
 
   constructor() {
-    // Refrescar permisos y contexto después de entrada a ruta sensible
     this.auth.me().subscribe({ error: () => undefined });
     this.reload();
   }
@@ -131,7 +52,7 @@ export class JuntaDistinguidosAsignacionComponent {
     this.loading.set(true);
     this.error.set(null);
     this.gov
-      .getCandidatos()
+      .getCandidatos(this.cicloNavService.cicloId()!)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (data) => this.snapshot.set(data),
@@ -139,7 +60,10 @@ export class JuntaDistinguidosAsignacionComponent {
       });
   }
 
-  toggle(id: number, ev: Event): void {
+  toggle(row: DistinguidoCandidatoFila, ev: Event): void {
+    if (row.bloqueadoPorVal08) {
+      return;
+    }
     const input = ev.target as HTMLInputElement | null;
     const on = !!input?.checked;
     const snap = this.snapshot();
@@ -148,38 +72,74 @@ export class JuntaDistinguidosAsignacionComponent {
 
     if (on) {
       if (next.size >= remaining) {
-        input!.checked = false;
+        if (input) {
+          input.checked = false;
+        }
+        this.error.set('La selección excede el cupo institucional restante.');
         return;
       }
-      next.add(id);
+      next.add(row.finalEvaluationId);
     } else {
-      next.delete(id);
+      next.delete(row.finalEvaluationId);
     }
+    this.error.set(null);
     this.selected.set(next);
+  }
+
+  iniciarAsignacion(): void {
+    if (this.selected().size === 0) {
+      return;
+    }
+    this.confirmandoAsignacion.set(true);
+  }
+
+  cancelarAsignacion(): void {
+    this.confirmandoAsignacion.set(false);
+  }
+
+  descargarActaJunta(): void {
+    this.descargandoActa.set(true);
+    this.downloadError.set(null);
+    this.gov
+      .downloadActaJuntaPdf(this.cicloNavService.cicloId()!)
+      .pipe(finalize(() => this.descargandoActa.set(false)))
+      .subscribe({
+        next: (blob) => downloadBlob(blob, 'acta_junta_distinguido.pdf'),
+        error: (err) => this.downloadError.set(
+          err?.error?.message
+          ?? 'No se pudo generar el acta de la Junta. Asigne al menos un Rendimiento distinguido e intente nuevamente.'
+        )
+      });
   }
 
   submit(): void {
     const ids = [...this.selected()];
     const remaining = this.snapshot()?.remainingDistinguidoSlots ?? 0;
     if (ids.length === 0 || ids.length > remaining) {
-      this.error.set('Seleccion inválida o excede el cupo institucional restante.');
+      this.error.set('Selección inválida o excede el cupo institucional restante.');
+      this.confirmandoAsignacion.set(false);
       return;
     }
     this.success.set(null);
     this.assigning.set(true);
     this.gov
-      .asignar({ finalEvaluationIds: ids })
-      .pipe(finalize(() => this.assigning.set(false)))
+      .asignar(this.cicloNavService.cicloId()!, { finalEvaluationIds: ids })
+      .pipe(finalize(() => {
+        this.assigning.set(false);
+        this.confirmandoAsignacion.set(false);
+      }))
       .subscribe({
         next: (r) => {
           this.success.set(
-            `Asignaciones registradas (${r.assignedCount}). Restantes después de aplicar la decisión institucional: ${r.remainingDistinguidoSlotsAfter}.`
+            `Asignaciones registradas (${r.assignedCount}). Restantes después de la decisión: ${r.remainingDistinguidoSlotsAfter}.`
           );
           this.selected.set(new Set());
           this.reload();
         },
-        error: () =>
-          this.error.set('Fallo técnico o validación institucional. Revise selección contra lo informado por ORH.')
+        error: (err) => this.error.set(
+          err?.error?.message
+          ?? 'No se pudo completar la asignación. Revise confirmaciones pendientes (VAL-08) y requisitos ORH.'
+        )
       });
   }
 }

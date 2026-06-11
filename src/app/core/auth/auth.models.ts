@@ -35,7 +35,15 @@ export type ProtectedFeature =
   | 'orhDistinguidosCandidates'
   | 'juntaDistinguidosAssign'
   | 'userManagement'
-  | 'assignmentManagement';
+  | 'assignmentManagement'
+  | 'participacion'       // T0-01: canViewParticipacion (ORH funcional)
+  | 'cronograma'
+  | 'cronogramaEdit'
+  | 'seguimiento'
+  | 'confirmacion'
+  | 'cie'
+  | 'informeCierre'
+  | 'auditoria';
 
 export interface FeatureAccess {
   canAccessDashboard: boolean;
@@ -67,6 +75,21 @@ export interface FeatureAccess {
   canViewDistinguidoCandidates: boolean;
   canManageDistinguidoRequisites: boolean;
   canAssignDistinguido: boolean;
+  // T0-01: permisos GDR participación (ORH funcional, no admin técnico)
+  canViewParticipacion: boolean;
+  canManageParticipacion: boolean;
+  // P0/P1: capacidades normativas nuevas (RPE 068-2020)
+  canViewCronograma: boolean;
+  canEditCronograma: boolean;
+  canViewSeguimiento: boolean;
+  canRegistrarSeguimiento: boolean;
+  canSolicitarConfirmacion: boolean;
+  canViewConfirmacion: boolean;
+  canViewCie: boolean;
+  canResolverCasosCie: boolean;
+  canViewInformeCierre: boolean;
+  canGenerarInformeCierre: boolean;
+  canViewAuditoria: boolean;
 }
 
 export interface ActiveCycleContext {
@@ -87,6 +110,7 @@ export interface ActiveCycleContext {
   functionalActor: string;
   operationalScope: string;
   gdrOperational: boolean;
+  estadoEtapa: string | null;
 }
 
 export interface UserSessionResponse {

@@ -1,3 +1,5 @@
+export type EstadoConfirmacionResultado = 'SIN_SOLICITUD' | 'PENDIENTE' | 'RESUELTA';
+
 export interface DistinguidoCandidatoFila {
   assignmentId: number;
   finalEvaluationId: number;
@@ -11,6 +13,10 @@ export interface DistinguidoCandidatoFila {
   eligibleForDistinguidoPool: boolean;
   rankEligible: number;
   alreadyDistinguido: boolean;
+  estadoConfirmacion: EstadoConfirmacionResultado;
+  estadoConfirmacionLabel: string;
+  confirmacionPendiente: boolean;
+  bloqueadoPorVal08: boolean;
 }
 
 export interface DistinguidoCandidatosResponse {
@@ -18,6 +24,8 @@ export interface DistinguidoCandidatosResponse {
   maxDistinguidosSlots: number;
   currentDistinguidosAssigned: number;
   remainingDistinguidoSlots: number;
+  candidatosConConfirmacionPendiente: number;
+  bloqueoVal08Activo: boolean;
   rows: DistinguidoCandidatoFila[];
 }
 

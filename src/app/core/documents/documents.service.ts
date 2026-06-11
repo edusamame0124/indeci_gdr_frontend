@@ -33,9 +33,10 @@ export class DocumentsService {
       .pipe(map((response) => response.data));
   }
 
-  listSignedDocuments(evaluatedId: number, page = 0, size = 10): Observable<PageResponse<DocumentoFirmadoResumen>> {
+  listSignedDocuments(evaluatedId: number, cycleId: number, page = 0, size = 10): Observable<PageResponse<DocumentoFirmadoResumen>> {
     const params = new HttpParams()
       .set('evaluatedId', evaluatedId)
+      .set('cycleId', cycleId)
       .set('page', page)
       .set('size', size);
     return this.http
@@ -138,11 +139,11 @@ export class DocumentsService {
    * Descarga el Formato GDR generado (.pdf) para el evaluado indicado.
    * Usa la query `evaluatedId` alineada al backend y respeta nombre y MIME devueltos en cabeceras.
    */
-  downloadFormatoGdrPdf(evaluatedId: number): Observable<FormatoGdrPdfDownload> {
+  downloadFormatoGdrPdf(evaluatedId: number, cycleId: number): Observable<FormatoGdrPdfDownload> {
     const fallbackFileName = `formato_gdr_evaluado_${evaluatedId}.pdf`;
     return this.http
       .get(`${environment.apiBaseUrl}/documentos/formato-gdr/pdf`, {
-        params: { evaluatedId: String(evaluatedId) },
+        params: { evaluatedId: String(evaluatedId), cycleId: String(cycleId) },
         observe: 'response',
         responseType: 'blob'
       })

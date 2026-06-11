@@ -1,0 +1,115 @@
+<section class="page">
+  <div class="page__header">
+    <div>
+      <p class="page__eyebrow">Lote 5</p>
+      <h1>Consentimientos</h1>
+      <p class="page__subtitle">
+        Registro self-service de aceptaciones sobre textos y versiones vigentes del sistema GDR Access.
+      </p>
+    </div>
+    <a [routerLink]="cicloNavService.boardRoute()" class="page__link">Volver al panel</a>
+  </div>
+
+  <app-cycle-context-bar />
+
+  @if (errorMessage()) {
+    <div class="page__state page__state--error">{{ errorMessage() }}</div>
+  }
+
+  <div class="summary-strip">
+    <div>
+      <span>Tipos vigentes</span>
+      <strong>{{ consentimientos().length }}</strong>
+    </div>
+    <div>
+      <span>Aceptados</span>
+      <strong>{{ acceptedCount() }}</strong>
+    </div>
+    <div>
+      <span>Historial</span>
+      <strong>{{ historial().length }}</strong>
+    </div>
+  </div>
+
+  <section class="panel">
+    <header class="panel__header">
+      <div>
+        <h2>Consentimientos vigentes</h2>
+        <p>El usuario autenticado acepta solo sobre su propia sesión.</p>
+      </div>
+      <button type="button" class="secondary-link" (click)="loadData()">Actualizar</button>
+    </header>
+
+    @if (consentimientos().length) {
+      <div class="record-list">
+        @for (item of consentimientos(); track item.idTipoConsentimiento) {
+          <article class="record-card">
+            <div class="record-card__head">
+              <div>
+                <span class="record-card__eyebrow">{{ item.codigoConsentimiento }} v{{ item.versionConsentimiento }}</span>
+                <strong>{{ item.nombreConsentimiento }}</strong>
+              </div>
+              <span class="status-pill" [class.status-pill--success]="item.aceptado">
+                {{ item.aceptado ? 'ACEPTADO' : 'PENDIENTE' }}
+              </span>
+            </div>
+            <p>{{ item.textoConsentimiento }}</p>
+            <div class="record-card__meta">
+              <span>Requerido: {{ item.requerido ? 'SI' : 'NO' }}</span>
+              <span>Fecha aceptacion: {{ item.fechaAceptacion || 'Sin registro' }}</span>
+            </div>
+            @if (!item.aceptado) {
+              <form [formGroup]="acceptForm" class="accept-form" (ngSubmit)="accept(item.idTipoConsentimiento)">
+                <label class="field">
+                  <span>Detalle de aceptacion</span>
+                  <input type="text" formControlName="detalleAceptacion" placeholder="Opcional" />
+                </label>
+                <button type="submit" class="primary-button">Aceptar consentimiento</button>
+              </form>
+            }
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="page__state">No hay consentimientos vigentes para mostrar.</div>
+    }
+  </section>
+
+  <section class="panel">
+    <header class="panel__header">
+      <div>
+        <h2>Historial personal</h2>
+        <p>Trazabilidad de aceptaciones registradas por el propio usuario autenticado.</p>
+      </div>
+    </header>
+
+    @if (historial().length) {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Codigo</th>
+              <th>Nombre</th>
+              <th>Version</th>
+              <th>Fecha aceptacion</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of historial(); track item.idRegistroConsentimiento) {
+              <tr>
+                <td>{{ item.codigoConsentimiento }}</td>
+                <td>{{ item.nombreConsentimiento }}</td>
+                <td>{{ item.versionConsentimiento }}</td>
+                <td>{{ item.fechaAceptacion }}</td>
+                <td>{{ item.detalleAceptacion || 'Sin detalle' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="page__state">No hay historial personal de consentimientos.</div>
+    }
+  </section>
+</section>

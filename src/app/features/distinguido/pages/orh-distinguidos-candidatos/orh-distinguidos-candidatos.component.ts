@@ -5,120 +5,24 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { DistinguidoGovernanceService } from '../../../../core/distinguido/distinguido-governance.service';
 import type { DistinguidoCandidatoFila, DistinguidoCandidatosResponse } from '../../../../core/distinguido/distinguido-governance.models';
+import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
+import { CycleContextBarComponent } from '../../../../shared/ui/cycle-context-bar.component';
 
+/**
+ * P5 — ORH: cuadro de candidatos a Rendimiento distinguido con trazabilidad VAL-08.
+ */
 @Component({
   selector: 'app-orh-distinguidos-candidatos',
   standalone: true,
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, CycleContextBarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: `
-    .panel { padding: 1rem 1.25rem 2rem; max-width: 1200px; margin: 0 auto; }
-    .muted { opacity: 0.78; font-size: 0.88rem; }
-    .banner { background: #fff; border: 1px solid #dfe5ef; border-radius: 14px; padding: 1rem 1.1rem; margin-bottom: 1rem; display: grid; gap: 0.35rem; }
-    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e4e9f2; }
-    th, td { text-align: left; padding: 0.55rem 0.65rem; font-size: 0.86rem; }
-    thead { background: #f5f7fb; }
-    tr + tr td { border-top: 1px solid #eef1f7; }
-    .actions button { padding: 0.35rem 0.65rem; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; margin-right: 0.35rem; }
-    .btn { background: #7f1714; color: #fff; }
-    label { cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; }
-    .breadcrumb { margin-bottom: 1rem; font-size: 0.86rem; }
-    .breadcrumb a { color: #7f1714; }
-  `,
-  template: `
-    <section class="panel">
-      <nav class="breadcrumb" aria-label="Ruta">
-        <a routerLink="/dashboard">Dashboard</a>
-        <span> / Cupo Rendimiento distinguido · ORH</span>
-      </nav>
-
-      <header>
-        <h1>Listado institucional y requisitos (ORH)</h1>
-        <p class="muted">
-          Calificación notificada y cumplimiento 8.2 (marcador operativo hasta incorporar texto normativo institucional). Solo buen rendimiento más notificación y 8.2 ingresan al grupo priorizado.
-        </p>
-      </header>
-
-      @if (error(); as err) {
-        <div class="alert alert--error" role="alert"><span>{{ err }}</span></div>
-      }
-      @if (success(); as msg) {
-        <div class="alert alert--success" role="status"><span>{{ msg }}</span></div>
-      }
-
-      @if (summary(); as s) {
-        <div class="banner">
-          <strong>Universo con calificación notificada:</strong>
-          {{ s.notifiedUniverseTotal }} · <strong>Tope Rendimiento distinguido:</strong>
-          {{ s.maxDistinguidosSlots }} · <strong>Asignados actualmente:</strong>
-          {{ s.currentDistinguidosAssigned }} · <strong>Restantes:</strong> {{ s.remainingDistinguidoSlots }}
-        </div>
-      }
-
-      @if (loading()) {
-        <p class="muted">Cargando resultados...</p>
-      } @else {
-        @if (rows(); as list) {
-          <div style="overflow-x:auto;">
-            <table>
-              <thead>
-                <tr>
-                  <th>Evaluado</th>
-                  <th>Puntaje</th>
-                  <th>Calificación cualitativa</th>
-                  <th>Prioridad</th>
-                  <th>Calificación notificada</th>
-                  <th>Ordinal 8.2 (marcador)</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (r of list; track r.assignmentId) {
-                  <tr>
-                    <td>{{ r.evaluatedDisplayName }}</td>
-                    <td>{{ r.consolidatedScore | number: '1.2-4' }}</td>
-                    <td>{{ r.qualitativeRatingLabel || '—' }}</td>
-                    <td>
-                      @if (r.rankEligible > 0) {
-                        {{ r.rankEligible }}
-                      } @else { — }
-                    </td>
-                    <td>
-                      <label>
-                        <input
-                          type="checkbox"
-                          [checked]="editableNotified()[r.assignmentId]"
-                          (change)="setNotified(r.assignmentId, $event)"
-                        />
-                      </label>
-                    </td>
-                    <td>
-                      <label>
-                        <input
-                          type="checkbox"
-                          [checked]="editableDirective82()[r.assignmentId]"
-                          (change)="setDirective82(r.assignmentId, $event)"
-                        />
-                      </label>
-                    </td>
-                    <td class="actions">
-                      <button type="button" class="btn" (click)="saveRow(r)" [disabled]="savingAssignmentId() === r.assignmentId">
-                        Actualizar flags
-                      </button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      }
-    </section>
-  `
+  templateUrl: './orh-distinguidos-candidatos.component.html',
+  styleUrl: './orh-distinguidos-candidatos.component.css'
 })
 export class OrhDistinguidosCandidatosComponent {
   private readonly gov = inject(DistinguidoGovernanceService);
   private readonly auth = inject(AuthService);
+  readonly cicloNavService = inject(CicloNavService);
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -140,7 +44,7 @@ export class OrhDistinguidosCandidatosComponent {
     this.loading.set(true);
     this.error.set(null);
     this.gov
-      .getCandidatos()
+      .getCandidatos(this.cicloNavService.cicloId()!)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (data) => {
@@ -178,7 +82,7 @@ export class OrhDistinguidosCandidatosComponent {
     }
     this.savingAssignmentId.set(row.assignmentId);
     this.gov
-      .patchRequisitos(row.assignmentId, {
+      .patchRequisitos(row.assignmentId, this.cicloNavService.cicloId()!, {
         qualRatingNotified: n,
         directive82ComplianceConfirmed: d
       })

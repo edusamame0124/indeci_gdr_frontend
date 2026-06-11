@@ -1,0 +1,118 @@
+.macro-flow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 0.75rem 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.macro-flow::-webkit-scrollbar { display: none; }
+
+.macro-flow__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  min-width: 80px;
+}
+
+/* Línea conectora entre items */
+.macro-flow__item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: calc(50% + 10px);
+  right: calc(-50% + 10px);
+  height: 2px;
+  background: #e2e8f0;
+  z-index: 0;
+}
+
+.macro-flow__item[data-status='completed']:not(:last-child)::after {
+  background: #16a34a;
+}
+
+.macro-flow__item[data-status='active']:not(:last-child)::after {
+  background: #bdd3f5;
+}
+
+/* Punto del paso */
+.macro-flow__dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  transition: all 120ms ease;
+}
+
+.macro-flow__item[data-status='completed'] .macro-flow__dot {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+.macro-flow__item[data-status='active'] .macro-flow__dot {
+  background: #1565C0;
+  border-color: #1565C0;
+  box-shadow: 0 0 0 4px rgba(21, 101, 192, 0.15);
+}
+
+.macro-flow__item[data-status='active'] .macro-flow__dot::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.macro-flow__item[data-status='upcoming'] .macro-flow__dot {
+  background: #f8fafc;
+}
+
+.macro-flow__check {
+  width: 12px;
+  height: 12px;
+}
+
+/* Conector horizontal (alternativo si se quiere más control) */
+.macro-flow__connector {
+  display: none; /* usamos el pseudo-elemento ::after del item */
+}
+
+/* Etiqueta */
+.macro-flow__label {
+  margin-top: 6px;
+  font-size: 0.6875rem;
+  text-align: center;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.macro-flow__item[data-status='completed'] .macro-flow__label {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.macro-flow__item[data-status='active'] .macro-flow__label {
+  color: #1565C0;
+  font-weight: 700;
+}
+
+.macro-flow__item[data-status='upcoming'] .macro-flow__label {
+  color: #94a3b8;
+}
+
+/* Responsive: compactar en móvil */
+@media (max-width: 600px) {
+  .macro-flow__label { font-size: 0.5625rem; }
+  .macro-flow__item { min-width: 56px; }
+}

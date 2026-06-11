@@ -1,0 +1,211 @@
+<section class="workspace">
+  <div class="workspace__container">
+    <nav class="breadcrumb">
+      <a [routerLink]="cicloNavService.boardRoute()">{{ cicloNavService.boardLabel() }}</a>
+      <span>/</span>
+      <span>Confirmación de calificación</span>
+    </nav>
+
+    <header class="workspace__hero">
+      <div>
+        <h1 class="workspace__title">Confirmación de calificación</h1>
+        <p class="workspace__subtitle">
+          Solicitud de confirmación ante el Comité Institucional de Evaluación.
+          Plazo: 5 días hábiles desde la reunión de retroalimentación final (RPE 068-2020 Art. 41).
+        </p>
+      </div>
+    </header>
+
+    <app-cycle-context-bar />
+
+    @if (loading()) {
+      <div class="loading-state">Cargando...</div>
+    } @else if (error()) {
+      <div class="error-state">
+        <p>{{ error() }}</p>
+      </div>
+    } @else if (modoEvaluado()) {
+
+      <!-- Resumen de la evaluación del evaluado -->
+      @if (detail(); as d) {
+        <div class="resumen-card">
+          <div class="resumen-card__row">
+            <div class="resumen-card__item">
+              <span class="resumen-card__label">Calificación obtenida</span>
+              <span class="resumen-card__value">{{ d.qualitativeRatingLabel ?? 'Pendiente' }}</span>
+            </div>
+            <div class="resumen-card__item">
+              <span class="resumen-card__label">Puntaje consolidado</span>
+              <span class="resumen-card__value">{{ d.consolidatedScore ?? '—' }}</span>
+            </div>
+            <div class="resumen-card__item">
+              <span class="resumen-card__label">Plazo para solicitar</span>
+              @switch (plazoEstado()) {
+                @case ('sin-plazo') {
+                  <span class="plazo-badge plazo-badge--neutral">Sin reunión de retroalimentación registrada</span>
+                }
+                @case ('vigente') {
+                  <span class="plazo-badge plazo-badge--ok">
+                    Hasta el {{ d.plazoSolicitudConfirmacion | date:'dd/MM/yyyy' }}
+                    ({{ d.diasHabilesRestantesConfirmacion }} días hábiles)
+                  </span>
+                }
+                @case ('ultimo-dia') {
+                  <span class="plazo-badge plazo-badge--warn">
+                    Último día: {{ d.plazoSolicitudConfirmacion | date:'dd/MM/yyyy' }}
+                  </span>
+                }
+                @case ('vencido') {
+                  <span class="plazo-badge plazo-badge--bad">
+                    Venció el {{ d.plazoSolicitudConfirmacion | date:'dd/MM/yyyy' }}
+                  </span>
+                }
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Estado de la solicitud existente -->
+      @if (solicitud(); as s) {
+        <div class="solicitud-panel">
+          <h3 class="solicitud-panel__title">Su solicitud de confirmación</h3>
+          <div class="solicitud-panel__estado">
+            <span class="badge badge--solicitud" [attr.data-estado]="s.estado">{{ s.estadoLabel }}</span>
+            @if (s.numeroCaso) {
+              <span class="solicitud-panel__caso">Caso {{ s.numeroCaso }}</span>
+            }
+          </div>
+          <dl class="solicitud-panel__detalle">
+            <div>
+              <dt>Fecha de presentación</dt>
+              <dd>{{ s.fechaSolicitud | date:'dd/MM/yyyy HH:mm' }}</dd>
+            </div>
+            <div>
+              <dt>Sustento presentado</dt>
+              <dd>{{ s.sustentoEvaluado }}</dd>
+            </div>
+            @if (s.fechaDerivacionCie) {
+              <div>
+                <dt>Derivada al CIE</dt>
+                <dd>{{ s.fechaDerivacionCie | date:'dd/MM/yyyy HH:mm' }}</dd>
+              </div>
+            }
+          </dl>
+
+          @if (s.estado === 'RESUELTA') {
+            <div class="decision-box" [class.decision-box--modifica]="s.decision === 'MODIFICA'">
+              <strong class="decision-box__titulo">
+                Decisión del CIE:
+                {{ s.decision === 'CONFIRMA' ? 'Se confirma la calificación' : 'Se modifica la calificación' }}
+              </strong>
+              @if (s.decision === 'MODIFICA' && s.calificacionResultadoLabel) {
+                <p class="decision-box__linea">Nueva calificación: <strong>{{ s.calificacionResultadoLabel }}</strong></p>
+              }
+              @if (s.sustentoCie) {
+                <p class="decision-box__linea">Sustento del CIE: {{ s.sustentoCie }}</p>
+              }
+              <p class="decision-box__nota">
+                La decisión del CIE es definitiva (RPE 068-2020 Art. 42).
+              </p>
+            </div>
+          } @else {
+            <p class="solicitud-panel__nota">
+              Su caso está en revisión por el Comité Institucional de Evaluación.
+              Recibirá una notificación cuando se registre la decisión.
+            </p>
+          }
+        </div>
+      } @else if (puedeSolicitar()) {
+
+        <!-- Formulario de nueva solicitud -->
+        <div class="form-section">
+          <h3 class="form-section__title">Presentar solicitud de confirmación</h3>
+          <p class="form-section__ayuda">
+            Si no está conforme con su calificación, sustente por escrito su solicitud.
+            Será derivada automáticamente al Comité Institucional de Evaluación (CIE),
+            cuya decisión es definitiva.
+          </p>
+          @if (formError()) {
+            <div class="alerta alerta--error">{{ formError() }}</div>
+          }
+          <label class="campo">
+            Sustento de la solicitud
+            <textarea
+              rows="5"
+              [value]="sustento()"
+              (input)="onSustento($any($event.target).value)"
+              [attr.maxlength]="sustentoMax"
+              [disabled]="confirmandoEnvio() || enviando()"
+              placeholder="Explique las razones por las que solicita la confirmación de su calificación..."
+            ></textarea>
+            <span class="campo__contador">{{ sustento().length }} / {{ sustentoMax }}</span>
+          </label>
+
+          @if (!confirmandoEnvio()) {
+            <div class="form-actions">
+              <button type="button" class="btn btn--primary" (click)="iniciarConfirmacion()">
+                Solicitar confirmación
+              </button>
+            </div>
+          } @else {
+            <div class="confirmacion-inline" role="alertdialog" aria-label="Confirmar envío de solicitud">
+              <p class="confirmacion-inline__texto">
+                ¿Confirma el envío de su solicitud? Una vez presentada será derivada al CIE
+                y no podrá modificarla.
+              </p>
+              <div class="confirmacion-inline__acciones">
+                <button type="button" class="btn btn--primary" [disabled]="enviando()" (click)="enviarSolicitud()">
+                  {{ enviando() ? 'Enviando...' : 'Sí, enviar solicitud' }}
+                </button>
+                <button type="button" class="btn btn--secondary" [disabled]="enviando()" (click)="cancelarConfirmacion()">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (plazoEstado() === 'vencido') {
+        <div class="alerta alerta--warning">
+          El plazo para solicitar la confirmación de su calificación ya venció.
+          Si considera que existe un error, comuníquese con la Oficina de Recursos Humanos.
+        </div>
+      } @else if (plazoEstado() === 'sin-plazo') {
+        <div class="alerta alerta--info">
+          El plazo para solicitar confirmación se activa cuando su evaluador/a registra
+          la reunión de retroalimentación final.
+        </div>
+      }
+
+    } @else {
+
+      <!-- Listado de supervisión ORH / CIE / Admin -->
+      <div class="lista-section">
+        <h3 class="lista-section__title">Solicitudes del ciclo activo</h3>
+        @for (s of solicitudes(); track s.id) {
+          <div class="solicitud-row">
+            <div class="solicitud-row__principal">
+              <strong class="solicitud-row__nombre">{{ s.evaluadoNombre }}</strong>
+              <span class="solicitud-row__fecha">{{ s.fechaSolicitud | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div class="solicitud-row__meta">
+              @if (s.numeroCaso) {
+                <span class="solicitud-row__caso">{{ s.numeroCaso }}</span>
+              }
+              <span class="badge badge--solicitud" [attr.data-estado]="s.estado">{{ s.estadoLabel }}</span>
+              @if (s.decision) {
+                <span class="badge badge--decision" [attr.data-decision]="s.decision">
+                  {{ s.decision === 'CONFIRMA' ? 'Confirmada' : 'Modificada' }}
+                </span>
+              }
+            </div>
+          </div>
+        } @empty {
+          <div class="lista-section__empty">
+            No hay solicitudes de confirmación registradas en el ciclo activo.
+          </div>
+        }
+      </div>
+    }
+  </div>
+</section>

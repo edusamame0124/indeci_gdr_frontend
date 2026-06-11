@@ -1,0 +1,17 @@
+<nav class="macro-flow" aria-label="Progresión del ciclo GDR" role="list">
+  @for (step of steps(); track step.estado; let last = $last) {
+    <div class="macro-flow__item" [attr.data-status]="step.status" role="listitem">
+      <div class="macro-flow__dot" [attr.aria-current]="step.status === 'active' ? 'step' : null">
+        @if (step.status === 'completed') {
+          <svg class="macro-flow__check" viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M2 6.5 5 9.5 10 4" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        }
+      </div>
+      @if (!last) {
+        <div class="macro-flow__connector" [attr.data-status]="step.status"></div>
+      }
+      <span class="macro-flow__label">{{ step.label }}</span>
+    </div>
+  }
+</nav>

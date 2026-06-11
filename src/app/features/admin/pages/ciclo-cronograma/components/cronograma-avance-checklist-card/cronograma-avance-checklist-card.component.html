@@ -1,0 +1,74 @@
+<section
+  class="avance-checklist"
+  role="region"
+  aria-labelledby="avance-checklist-title"
+  aria-live="polite"
+>
+  <header class="avance-checklist__header">
+    <div>
+      <h2 id="avance-checklist-title" class="avance-checklist__title">
+        Requisitos para avanzar a seguimiento
+      </h2>
+      <p class="avance-checklist__subtitle">
+        Revise cada punto antes de confirmar el avance de etapa. Los avisos se actualizan según el cronograma,
+        las metas y las validaciones normativas del ciclo.
+      </p>
+    </div>
+    @if (checklist().canAdvance) {
+      <span class="avance-checklist__summary avance-checklist__summary--ok">Listo para avanzar</span>
+    } @else {
+      <span class="avance-checklist__summary avance-checklist__summary--warn">
+        {{ checklist().failedCount + checklist().pendingCount }} pendiente(s)
+      </span>
+    }
+  </header>
+
+  @if (serverMessage()) {
+    <div class="avance-checklist__server-alert" role="alert">
+      <strong>Último intento de avance:</strong> {{ serverMessage() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="avance-checklist__loading">Verificando requisitos normativos...</p>
+  } @else {
+    <ul class="avance-checklist__list">
+      @for (item of checklist().items; track item.code) {
+        <li class="avance-checklist__item" [attr.data-status]="item.status">
+          <div class="avance-checklist__item-icon" aria-hidden="true">
+            @switch (item.status) {
+              @case ('passed') {
+                <svg viewBox="0 0 20 20"><path d="M16.7 5.3a1 1 0 0 0-1.4 0L8 12.6 4.7 9.3a1 1 0 1 0-1.4 1.4l4 4a1 1 0 0 0 1.4 0l8-8a1 1 0 0 0 0-1.4Z"/></svg>
+              }
+              @case ('failed') {
+                <svg viewBox="0 0 20 20"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm3.7 10.3a1 1 0 0 1-1.4 1.4L10 11.4l-2.3 2.3a1 1 0 1 1-1.4-1.4L8.6 10 6.3 7.7a1 1 0 1 1 1.4-1.4L10 8.6l2.3-2.3a1 1 0 0 1 1.4 1.4L11.4 10l2.3 2.3Z"/></svg>
+              }
+              @default {
+                <svg viewBox="0 0 20 20"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 11a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm1-4.5H9V6h2v3.5Z"/></svg>
+              }
+            }
+          </div>
+
+          <div class="avance-checklist__item-body">
+            <div class="avance-checklist__item-head">
+              <h3 class="avance-checklist__item-title">{{ item.title }}</h3>
+              <span class="avance-checklist__badge" [attr.data-status]="item.status">
+                {{ statusLabel(item) }}
+              </span>
+            </div>
+            <p class="avance-checklist__item-desc">{{ item.description }}</p>
+            @if (item.detail) {
+              <p class="avance-checklist__item-detail">{{ item.detail }}</p>
+            }
+            @if (item.normativaRef) {
+              <p class="avance-checklist__item-ref">Referencia: {{ item.normativaRef }}</p>
+            }
+            @if (item.actionLabel && item.actionRoute) {
+              <a [routerLink]="item.actionRoute" class="avance-checklist__action">{{ item.actionLabel }}</a>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>

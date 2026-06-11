@@ -16,6 +16,7 @@ import {
 import { AssignmentsService } from '../../../../core/admin/assignments.service';
 import { CycleOptionResponse } from '../../../../core/admin/cycles.models';
 import { CyclesService } from '../../../../core/admin/cycles.service';
+import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
 
 type TabKey = 'relations' | 'summary';
 type AssignmentModalMode = 'create' | 'edit';
@@ -30,7 +31,7 @@ type PersonRole = 'evaluator' | 'evaluated';
     <section class="workspace">
       <div class="workspace__container">
         <nav class="breadcrumb" aria-label="Ruta de navegacion">
-          <a routerLink="/dashboard">Dashboard</a>
+          <a [routerLink]="cicloNavService.boardRoute()">{{ cicloNavService.boardLabel() }}</a>
           <span>/</span>
           <a routerLink="/dashboard/admin/users">Administracion del sistema</a>
           <span>/</span>
@@ -60,7 +61,7 @@ type PersonRole = 'evaluator' | 'evaluated';
               </svg>
               Nueva relacion
             </button>
-            <a routerLink="/dashboard" class="button button--secondary">
+            <a [routerLink]="cicloNavService.boardRoute()" class="button button--secondary">
               <svg class="button__icon" viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M9.5 4.5 4 10l5.5 5.5 1.1-1.1-3.6-3.6H16v-1.6H7l3.6-3.6-1.1-1.1Z"/>
               </svg>
@@ -1325,6 +1326,7 @@ export class ParticipacionGdrComponent {
   private readonly assignmentsService = inject(AssignmentsService);
   private readonly cyclesService = inject(CyclesService);
   private readonly route = inject(ActivatedRoute);
+  readonly cicloNavService = inject(CicloNavService);
 
   protected readonly cycles = signal<CycleOptionResponse[]>([]);
   protected readonly selectedCycleId = signal<number | null>(null);

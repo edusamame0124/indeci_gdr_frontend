@@ -8,34 +8,49 @@ import {
   FinalEvaluationSummary,
   FinalEvaluationUpsertRequest,
   QualificationMailNotifyResponse,
-  ResultSummary
+  ResultSummary,
+  RetroFinalUpsertRequest
 } from './final-evaluation.models';
 
 @Injectable({ providedIn: 'root' })
 export class FinalEvaluationService {
   private readonly http = inject(HttpClient);
 
-  listFinalEvaluations(): Observable<FinalEvaluationSummary[]> {
+  listFinalEvaluations(cycleId: number): Observable<FinalEvaluationSummary[]> {
     return this.http
-      .get<ApiResponse<FinalEvaluationSummary[]>>(`${environment.apiBaseUrl}/evaluacion-final`)
+      .get<ApiResponse<FinalEvaluationSummary[]>>(`${environment.apiBaseUrl}/evaluacion-final`, { params: { cycleId } })
       .pipe(map((response) => response.data));
   }
 
-  getFinalEvaluation(evaluatedId: number): Observable<FinalEvaluationDetail> {
+  getFinalEvaluation(evaluatedId: number, cycleId: number): Observable<FinalEvaluationDetail> {
     return this.http
-      .get<ApiResponse<FinalEvaluationDetail>>(`${environment.apiBaseUrl}/evaluacion-final/${evaluatedId}`)
+      .get<ApiResponse<FinalEvaluationDetail>>(`${environment.apiBaseUrl}/evaluacion-final/${evaluatedId}`, { params: { cycleId } })
       .pipe(map((response) => response.data));
   }
 
-  createFinalEvaluation(payload: FinalEvaluationUpsertRequest): Observable<FinalEvaluationDetail> {
+  createFinalEvaluation(cycleId: number, payload: FinalEvaluationUpsertRequest): Observable<FinalEvaluationDetail> {
     return this.http
-      .post<ApiResponse<FinalEvaluationDetail>>(`${environment.apiBaseUrl}/evaluacion-final`, payload)
+      .post<ApiResponse<FinalEvaluationDetail>>(`${environment.apiBaseUrl}/evaluacion-final`, payload, { params: { cycleId } })
       .pipe(map((response) => response.data));
   }
 
-  updateFinalEvaluation(evaluationId: number, payload: FinalEvaluationUpsertRequest): Observable<FinalEvaluationDetail> {
+  updateFinalEvaluation(evaluationId: number, cycleId: number, payload: FinalEvaluationUpsertRequest): Observable<FinalEvaluationDetail> {
     return this.http
-      .put<ApiResponse<FinalEvaluationDetail>>(`${environment.apiBaseUrl}/evaluacion-final/${evaluationId}`, payload)
+      .put<ApiResponse<FinalEvaluationDetail>>(`${environment.apiBaseUrl}/evaluacion-final/${evaluationId}`, payload, { params: { cycleId } })
+      .pipe(map((response) => response.data));
+  }
+
+  registrarRetroalimentacionFinal(
+    evaluationId: number,
+    cycleId: number,
+    payload: RetroFinalUpsertRequest
+  ): Observable<FinalEvaluationDetail> {
+    return this.http
+      .put<ApiResponse<FinalEvaluationDetail>>(
+        `${environment.apiBaseUrl}/evaluacion-final/${evaluationId}/retroalimentacion-final`,
+        payload,
+        { params: { cycleId } }
+      )
       .pipe(map((response) => response.data));
   }
 

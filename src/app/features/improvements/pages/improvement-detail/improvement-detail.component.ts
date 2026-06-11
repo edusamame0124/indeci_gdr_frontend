@@ -5,6 +5,7 @@ import { AuthService } from '../../../../core/auth/auth.service';
 import { OportunidadMejoraDetalle, RegistrarOportunidadMejoraPayload } from '../../../../core/improvements/improvements.models';
 import { ImprovementsService } from '../../../../core/improvements/improvements.service';
 import { UiToastService } from '../../../../shared/ui/ui-toast.service';
+import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
 
 @Component({
   selector: 'app-improvement-detail',
@@ -15,10 +16,10 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
     <section class="page">
       <!-- Breadcrumb -->
       <nav class="breadcrumb" aria-label="Navegacion">
-        <a routerLink="/dashboard" class="breadcrumb__link">Inicio</a>
+        <a [routerLink]="cicloNavService.boardRoute()" class="breadcrumb__link">{{ cicloNavService.boardLabel() }}</a>
         <span class="breadcrumb__sep" aria-hidden="true">/</span>
         <a
-          [routerLink]="['/dashboard/oportunidades-mejora']"
+          [routerLink]="cicloNavService.moduleRoute('oportunidades-mejora')"
           [queryParams]="detail() ? { evaluatedId: detail()!.idEvaluado } : null"
           class="breadcrumb__link"
         >
@@ -36,7 +37,7 @@ import { UiToastService } from '../../../../shared/ui/ui-toast.service';
         </div>
         <div class="page__actions">
           <a
-            [routerLink]="['/dashboard/oportunidades-mejora']"
+            [routerLink]="cicloNavService.moduleRoute('oportunidades-mejora')"
             [queryParams]="detail() ? { evaluatedId: detail()!.idEvaluado } : null"
             class="btn btn--outline-neutral btn--sm"
           >
@@ -371,6 +372,7 @@ export class ImprovementDetailComponent {
   private readonly authService = inject(AuthService);
   private readonly improvementsService = inject(ImprovementsService);
   private readonly toastService = inject(UiToastService);
+  readonly cicloNavService = inject(CicloNavService);
 
   readonly detail = signal<OportunidadMejoraDetalle | null>(null);
   readonly loading = signal(true);

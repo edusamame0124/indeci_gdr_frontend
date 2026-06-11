@@ -1,0 +1,182 @@
+<section class="page">
+  <div class="page__header">
+    <div>
+      <p class="page__eyebrow">Metas e indicadores</p>
+      <h1>Indicadores</h1>
+      <p class="page__subtitle">
+        Gestion simple de indicadores desde una sola pantalla, con una experiencia clara en movil,
+        tablet y laptops pequenas.
+      </p>
+    </div>
+
+    <div class="page__actions">
+      <a [routerLink]="cicloNavService.boardRoute()" class="page__link page__link--ghost">Volver</a>
+      <button type="button" class="page__link" (click)="openCreateModal()">Nuevo indicador</button>
+    </div>
+  </div>
+
+  <app-cycle-context-bar />
+
+  @if (formError()) {
+    <div class="page__state page__state--error">{{ formError() }}</div>
+  }
+
+  <section class="table-card">
+    <div class="table-card__header">
+      <div>
+        <h2>Listado</h2>
+        <p>Revise y actualice indicadores activos sin perder legibilidad en pantallas pequenas.</p>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="page__state">Cargando indicadores...</div>
+    } @else {
+      <div class="desktop-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Codigo</th>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Formula</th>
+              <th>Segmento</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (indicator of indicators(); track indicator.id) {
+              <tr>
+                <td>{{ indicator.code }}</td>
+                <td>{{ indicator.name }}</td>
+                <td>{{ indicator.valueTypeName }}</td>
+                <td>{{ indicator.formulaName }}</td>
+                <td>{{ indicator.segmentName }}</td>
+                <td>
+                  <button type="button" class="inline-button" (click)="editIndicator(indicator)">Editar</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">No hay indicadores registrados.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-cards">
+        @for (indicator of indicators(); track indicator.id) {
+          <article class="indicator-card">
+            <div class="indicator-card__row">
+              <span>Codigo</span>
+              <strong>{{ indicator.code }}</strong>
+            </div>
+
+            <div class="indicator-card__row">
+              <span>Nombre</span>
+              <strong>{{ indicator.name }}</strong>
+            </div>
+
+            <div class="indicator-card__meta">
+              <div>
+                <span>Tipo</span>
+                <strong>{{ indicator.valueTypeName }}</strong>
+              </div>
+              <div>
+                <span>Formula</span>
+                <strong>{{ indicator.formulaName }}</strong>
+              </div>
+              <div>
+                <span>Segmento</span>
+                <strong>{{ indicator.segmentName }}</strong>
+              </div>
+            </div>
+
+            <button type="button" class="inline-button inline-button--full" (click)="editIndicator(indicator)">
+              Editar
+            </button>
+          </article>
+        } @empty {
+          <div class="page__state">No hay indicadores registrados.</div>
+        }
+      </div>
+    }
+  </section>
+
+  @if (modalOpen()) {
+    <div class="modal-backdrop" (click)="closeModal()"></div>
+
+    <section class="modal" role="dialog" aria-modal="true" aria-label="Formulario de indicador">
+      <div class="modal__header">
+        <div>
+          <p class="modal__eyebrow">Indicadores</p>
+          <h2>{{ editingIndicatorId() ? 'Editar indicador' : 'Nuevo indicador' }}</h2>
+          <p class="modal__subtitle">Complete solo los datos necesarios y guarde desde esta misma vista.</p>
+        </div>
+
+        <button type="button" class="modal__close" (click)="closeModal()" aria-label="Cerrar modal">x</button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="saveIndicator()" class="form-grid">
+        <label class="field field--half">
+          <span>Codigo</span>
+          <input
+            type="text"
+            [value]="displayedCode()"
+            readonly
+            placeholder="IND-00X"
+            class="field__readonly"
+          />
+        </label>
+
+        <label class="field field--half">
+          <span>Nombre</span>
+          <input type="text" formControlName="name" placeholder="Nombre del indicador" />
+        </label>
+
+        <label class="field field--full">
+          <span>Fórmula</span>
+          <textarea rows="3" formControlName="description" placeholder="Opcional(Si aplica)"></textarea>
+        </label>
+
+        <label class="field field--third">
+          <span>Tipo de valor</span>
+          <select formControlName="valueTypeId">
+            <option [ngValue]="null">Seleccione</option>
+            @for (item of valueTypes(); track item.id) {
+              <option [ngValue]="item.id">{{ item.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field field--third">
+          <span>Tipo de Fórmula (Indicador)</span>
+          <select formControlName="formulaId">
+            <option [ngValue]="null">Seleccione</option>
+            @for (item of formulas(); track item.id) {
+              <option [ngValue]="item.id">{{ item.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field field--third">
+          <span>Segmento</span>
+          <select formControlName="segmentId">
+            <option [ngValue]="null">Seleccione</option>
+            @for (item of segments(); track item.id) {
+              <option [ngValue]="item.id">{{ item.name }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="form-actions">
+          <button type="button" class="ghost-button" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="primary-button" [disabled]="saving() || loading()">
+            {{ editingIndicatorId() ? 'Actualizar' : 'Registrar' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+</section>

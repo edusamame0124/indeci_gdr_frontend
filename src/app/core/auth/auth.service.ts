@@ -134,7 +134,23 @@ export class AuthService {
       case 'userManagement':
         return access.canManageUsers;
       case 'assignmentManagement':
-        return access.canManageUsers;
+        return access.canEditCronograma;
+      case 'participacion':
+        return access.canViewParticipacion;
+      case 'cronograma':
+        return access.canViewCronograma;
+      case 'cronogramaEdit':
+        return access.canEditCronograma;
+      case 'seguimiento':
+        return access.canViewSeguimiento;
+      case 'confirmacion':
+        return access.canViewConfirmacion;
+      case 'cie':
+        return access.canViewCie;
+      case 'informeCierre':
+        return access.canViewInformeCierre;
+      case 'auditoria':
+        return access.canViewAuditoria;
       default:
         return false;
     }

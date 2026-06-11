@@ -53,7 +53,18 @@ export interface FinalEvaluationDetail {
   segmentName: string | null;
   status: string;
   evaluationComment: string | null;
+  /** P3 — Fecha de reunión de retroalimentación final (ISO yyyy-MM-dd). RPE 068-2020 Art. 33-39. */
+  fechaReunionRetroFinal: string | null;
+  /** P3 — Fecha límite para solicitar confirmación (+5 días hábiles). RPE 068-2020 Art. 41. */
+  plazoSolicitudConfirmacion: string | null;
+  /** P3 — Días hábiles restantes para solicitar confirmación (0 = vencido). */
+  diasHabilesRestantesConfirmacion: number | null;
   details: ScoreDetail[];
+}
+
+/** P3 — Registro de la reunión de retroalimentación final. */
+export interface RetroFinalUpsertRequest {
+  fechaReunionRetroFinal: string;
 }
 
 export interface ResultSummary {

@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DocumentsService } from '../../../../core/documents/documents.service';
 import { DocumentoFirmadoDetalle } from '../../../../core/documents/documents.models';
+import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
 
 @Component({
   selector: 'app-signed-document-detail',
@@ -20,7 +21,7 @@ import { DocumentoFirmadoDetalle } from '../../../../core/documents/documents.mo
           </p>
         </div>
         <a
-          [routerLink]="['/dashboard/documentos']"
+          [routerLink]="cicloNavService.moduleRoute('documentos')"
           [queryParams]="detail() ? { evaluatedId: detail()!.idEvaluado } : null"
           class="page__link"
         >
@@ -179,6 +180,7 @@ export class SignedDocumentDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly documentsService = inject(DocumentsService);
+  readonly cicloNavService = inject(CicloNavService);
 
   readonly detail = signal<DocumentoFirmadoDetalle | null>(null);
   readonly previewUrl = signal<SafeResourceUrl | null>(null);

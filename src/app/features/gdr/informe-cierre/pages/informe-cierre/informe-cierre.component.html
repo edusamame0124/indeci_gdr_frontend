@@ -1,0 +1,178 @@
+<section class="workspace" aria-labelledby="informe-cierre-title">
+  <div class="workspace__container">
+    <nav class="breadcrumb" aria-label="Ruta de navegación">
+      <a [routerLink]="cicloNavService.boardRoute()">{{ cicloNavService.boardLabel() }}</a>
+      <span aria-hidden="true">/</span>
+      <span>Informe de cierre</span>
+    </nav>
+
+    <header class="workspace__hero">
+      <div>
+        <h1 id="informe-cierre-title" class="workspace__title">Informe de cierre del ciclo</h1>
+        <p class="workspace__subtitle">
+          Consolidación institucional de resultados, confirmaciones y documentos firmados.
+          Plazo normativo VAL-06: remisión hasta el 31 de mayo del año siguiente (RPE 068-2020 Art. 55).
+        </p>
+      </div>
+    </header>
+
+    <app-cycle-context-bar />
+
+    @if (loading()) {
+      <p class="loading-state" aria-live="polite" aria-busy="true">Cargando consolidación…</p>
+    } @else if (error()) {
+      <div class="error-state" role="alert">{{ error() }}</div>
+    } @else {
+      @if (alerta(); as val06) {
+        <div
+          class="alerta {{ alertaClase() }}"
+          role="status"
+          aria-live="polite"
+          [attr.aria-label]="'Alerta de plazo: ' + val06.mensaje"
+        >
+          <strong>VAL-06 — Plazo informe de cierre</strong>
+          <p>{{ val06.mensaje }}</p>
+          @if (val06.fechaLimite) {
+            <p class="alerta__meta">Fecha límite: {{ val06.fechaLimite | date:'dd/MM/yyyy' }}</p>
+          }
+        </div>
+      }
+
+      @if (vistaPrevia(); as preview) {
+        <section class="stats-panel" aria-labelledby="stats-title">
+          <h2 id="stats-title" class="stats-panel__title">Vista previa — {{ preview.cycleName }}</h2>
+          <div class="stats-grid" role="group" aria-label="Indicadores consolidados del ciclo">
+            <article class="stat-card">
+              <span class="stat-card__label">Evaluados</span>
+              <strong class="stat-card__value">{{ preview.totalEvaluados }}</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Buen rendimiento</span>
+              <strong class="stat-card__value">{{ preview.totalBuenRendimiento }}</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Sujeto a observación</span>
+              <strong class="stat-card__value">{{ preview.totalSujetoObservacion }}</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Desaprobado</span>
+              <strong class="stat-card__value">{{ preview.totalDesaprobado }}</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Distinguido</span>
+              <strong class="stat-card__value">{{ preview.totalDistinguido }}</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Oportunidades de mejora</span>
+              <strong class="stat-card__value">{{ preview.totalOportunidadesMejora }}</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Confirmaciones</span>
+              <strong class="stat-card__value">{{ preview.totalConfirmaciones }}</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Confirmaciones resueltas</span>
+              <strong class="stat-card__value">{{ preview.totalConfirmacionesResueltas }}</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Documentos firmados</span>
+              <strong class="stat-card__value">{{ preview.totalDocumentosFirmados }}</strong>
+            </article>
+          </div>
+        </section>
+      }
+
+      @if (canGenerar()) {
+        <section class="form-panel" aria-labelledby="generar-title">
+          <h2 id="generar-title" class="form-panel__title">Generar informe en borrador</h2>
+          <label class="field" for="observaciones-orh">
+            <span>Observaciones ORH (opcional)</span>
+            <textarea
+              id="observaciones-orh"
+              rows="4"
+              [attr.maxlength]="observacionesMax"
+              [value]="observacionesOrh()"
+              (input)="onObservacionesChange($any($event.target).value)"
+              aria-describedby="observaciones-hint"
+            ></textarea>
+            <small id="observaciones-hint" class="field__hint">
+              {{ observacionesOrh().length }} / {{ observacionesMax }} caracteres
+            </small>
+          </label>
+          @if (formError()) {
+            <div class="form-panel__error" role="alert">{{ formError() }}</div>
+          }
+          <button
+            type="button"
+            class="btn-primary"
+            (click)="generarInforme()"
+            [disabled]="generando()"
+            [attr.aria-busy]="generando()"
+            aria-label="Generar informe de cierre en borrador"
+          >
+            {{ generando() ? 'Generando…' : 'Generar informe' }}
+          </button>
+        </section>
+      }
+
+      <section class="historial-panel" aria-labelledby="historial-title">
+        <h2 id="historial-title" class="historial-panel__title">Historial de informes generados</h2>
+        @if (historial().length === 0) {
+          <p class="historial-panel__empty">Aún no hay informes generados para el ciclo activo.</p>
+        } @else {
+          <div class="table-wrapper">
+            <table aria-label="Historial de informes de cierre">
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col">Evaluados</th>
+                  <th scope="col">Generado por</th>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of historial(); track item.informeId) {
+                  <tr [class.historial-row--activa]="informeSeleccionado() === item.informeId">
+                    <td>{{ item.informeId }}</td>
+                    <td>{{ item.estadoLabel }}</td>
+                    <td>{{ item.totalEvaluados }}</td>
+                    <td>{{ item.generadoPor ?? '—' }}</td>
+                    <td>{{ item.fechaGeneracion | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                      @if (item.informeId) {
+                        <div class="acciones" role="group" [attr.aria-label]="'Descargas del informe ' + item.informeId">
+                          <button
+                            type="button"
+                            class="btn-secondary"
+                            (click)="descargarPdf(item.informeId!)"
+                            [disabled]="descargandoPdf()"
+                            [attr.aria-busy]="descargandoPdf()"
+                            [attr.aria-label]="'Descargar PDF del informe ' + item.informeId"
+                          >
+                            PDF
+                          </button>
+                          <button
+                            type="button"
+                            class="btn-secondary"
+                            (click)="exportarCsv(item.informeId!)"
+                            [disabled]="exportandoCsv()"
+                            [attr.aria-busy]="exportandoCsv()"
+                            [attr.aria-label]="'Exportar CSV del informe ' + item.informeId"
+                          >
+                            CSV
+                          </button>
+                        </div>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  </div>
+</section>

@@ -1,0 +1,248 @@
+/* ── Base card ───────────────────────────────────────────────────────────── */
+.board-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.125rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #d1d5db);
+  background: var(--color-surface, #ffffff);
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Borde izquierdo semántico por estado */
+.board-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 8px 0 0 8px;
+  background: transparent;
+}
+
+/* ── Estados: borde izquierdo ──────────────────────────────────────────── */
+.board-card[data-state='activo']::before { background: #16a34a; }
+.board-card[data-state='disponible']::before { background: #1565C0; }
+.board-card[data-state='proxima_fase']::before { background: #4f7baa; }
+.board-card[data-state='solo_lectura']::before { background: #64748b; }
+.board-card[data-state='bloqueado']::before { background: #9ca3af; }
+.board-card[data-state='pendiente_requisitos']::before { background: #d97706; }
+.board-card[data-state='no_aplica']::before { background: transparent; }
+
+/* ── Hover y foco solo en navegables ─────────────────────────────────── */
+.board-card--navigable:hover {
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.12);
+  border-color: #1565C0;
+}
+
+.board-card--navigable:focus-visible {
+  outline: 3px solid #1565C0;
+  outline-offset: 2px;
+}
+
+/* ── Bloqueado / no aplica: aspecto reducido ─────────────────────────── */
+.board-card--blocked {
+  background: var(--color-surface-muted, #f9fafb);
+  cursor: default;
+}
+
+.board-card--no-aplica {
+  opacity: 0.35;
+  cursor: default;
+  background: var(--color-surface-muted, #f9fafb);
+}
+
+/* ── Info card ────────────────────────────────────────────────────────── */
+.board-card--info {
+  background: #f0f7ff;
+  border-color: #bdd3f5;
+}
+
+.board-card--info::before { background: #1565C0; }
+
+/* ── Header: fase + badge ─────────────────────────────────────────────── */
+.board-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.5rem;
+}
+
+.board-card__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.board-card__eyebrow--info {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #1565C0;
+}
+
+.board-card__icon-sm {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+/* ── Badge semántico ──────────────────────────────────────────────────── */
+.board-card__badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.board-card__badge[data-state='activo'] {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.board-card__badge[data-state='disponible'] {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.board-card__badge[data-state='proxima_fase'] {
+  background: #e0ecfa;
+  color: #1e4d8c;
+}
+
+.board-card__badge[data-state='solo_lectura'] {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.board-card__badge[data-state='bloqueado'] {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.board-card__badge[data-state='pendiente_requisitos'] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.board-card__badge[data-state='no_aplica'] {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+/* ── Contenido ────────────────────────────────────────────────────────── */
+.board-card__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0A2240;
+  line-height: 1.35;
+}
+
+.board-card--blocked .board-card__title,
+.board-card--no-aplica .board-card__title {
+  color: #6b7280;
+}
+
+.board-card__desc {
+  font-size: 0.8125rem;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.board-card__desc--muted {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ── Chip solo lectura ────────────────────────────────────────────────── */
+.board-card__readonly-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 4px;
+  padding: 2px 6px;
+  width: fit-content;
+}
+
+.board-card__readonly-chip svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+
+/* ── Motivo de bloqueo ────────────────────────────────────────────────── */
+.board-card__block-reason {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border-left: 3px solid #d97706;
+  border-radius: 0 4px 4px 0;
+  margin-top: 0.25rem;
+}
+
+.board-card[data-state='bloqueado'] .board-card__block-reason {
+  border-left-color: #9ca3af;
+}
+
+.board-card[data-state='proxima_fase'] .board-card__block-reason {
+  border-left-color: #4f7baa;
+}
+
+.board-card__block-detail {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.board-card__block-action {
+  font-size: 0.6875rem;
+  color: #1565C0;
+  font-style: italic;
+}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.board-card__footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 0.25rem;
+}
+
+.board-card__normativa {
+  font-size: 0.625rem;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+}
+
+.board-card__arrow {
+  color: #1565C0;
+  flex-shrink: 0;
+}
+
+.board-card__arrow svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.board-card--blocked .board-card__arrow,
+.board-card--no-aplica .board-card__arrow {
+  display: none;
+}

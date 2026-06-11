@@ -1,0 +1,75 @@
+<div class="cumplimiento" [class.cumplimiento--collapsed]="!isOperativo() || collapsed()">
+
+  <!-- Header: siempre visible -->
+  <div class="cumplimiento__header">
+    <div class="cumplimiento__header-left">
+      <span class="cumplimiento__tag">Planificación</span>
+      <h2 class="cumplimiento__title">Cumplimiento de la Planificación</h2>
+    </div>
+
+    @if (isOperativo()) {
+      <!-- Barra de progreso compacta -->
+      <div class="cumplimiento__progress" [attr.aria-label]="'Progreso: ' + porcentaje() + '%'">
+        <span class="cumplimiento__pct">{{ obligatoriosPasados() }}/{{ obligatoriosTotal() }}</span>
+        <div class="cumplimiento__bar" role="progressbar" [attr.aria-valuenow]="porcentaje()" aria-valuemin="0" aria-valuemax="100">
+          <div class="cumplimiento__bar-fill" [style.width.%]="porcentaje()"></div>
+        </div>
+      </div>
+      <button type="button" class="cumplimiento__toggle" (click)="toggleCollapse()" [attr.aria-expanded]="!collapsed()">
+        @if (collapsed()) { Mostrar } @else { Ocultar }
+        <svg viewBox="0 0 16 16" aria-hidden="true" [class.icon--rotated]="!collapsed()">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    } @else {
+      <!-- Colapsado: etapa avanzada (D-01) -->
+      <span class="cumplimiento__done-label">
+        <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7.5 5.5 11 12 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Planificación completada
+      </span>
+    }
+  </div>
+
+  <!-- Cuerpo: checklist (solo en modo operativo y no colapsado) -->
+  @if (isOperativo() && !collapsed()) {
+    <div class="cumplimiento__body">
+      <ul class="cumplimiento__list" aria-label="Requisitos de avance">
+        @for (item of checklist(); track item.code) {
+          <li class="cumplimiento__item" [attr.data-status]="item.status" [attr.data-tipo]="item.tipo">
+            <span class="cumplimiento__item-icon" aria-hidden="true">{{ statusIcon(item.status) }}</span>
+            <div class="cumplimiento__item-body">
+              <div class="cumplimiento__item-row">
+                <span class="cumplimiento__item-title">{{ item.title }}</span>
+                @if (item.tipo === 'configurable') {
+                  <span class="cumplimiento__item-tag-cfg">configurable</span>
+                }
+              </div>
+              @if (item.status !== 'passed') {
+                <span class="cumplimiento__item-detail">{{ item.detail }}</span>
+              }
+            </div>
+            <span class="cumplimiento__item-ref">{{ item.normativaRef }}</span>
+          </li>
+        }
+      </ul>
+
+      <!-- Botón avanzar: solo ORH, solo si todos los obligatorios pasan -->
+      @if (canAdvance()) {
+        <div class="cumplimiento__actions">
+          @if (allRequired()) {
+            <button type="button" class="btn btn--primary" (click)="onAvanzar()">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Avanzar a Seguimiento
+            </button>
+          } @else {
+            <p class="cumplimiento__advance-hint">
+              Complete todos los requisitos obligatorios para habilitar el avance a Seguimiento.
+              ({{ obligatoriosPasados() }}/{{ obligatoriosTotal() }} cumplidos)
+            </p>
+          }
+        </div>
+      }
+    </div>
+  }
+
+</div>

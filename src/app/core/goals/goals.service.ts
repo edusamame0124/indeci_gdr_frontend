@@ -18,33 +18,33 @@ import {
 export class GoalsService {
   private readonly http = inject(HttpClient);
 
-  listGoals(): Observable<GoalSummary[]> {
+  listGoals(cycleId: number): Observable<GoalSummary[]> {
     return this.http
-      .get<ApiResponse<GoalSummary[]>>(`${environment.apiBaseUrl}/goals`)
+      .get<ApiResponse<GoalSummary[]>>(`${environment.apiBaseUrl}/goals`, { params: { cycleId } })
       .pipe(map((response) => response.data));
   }
 
-  getGoal(goalId: number): Observable<GoalDetail> {
+  getGoal(goalId: number, cycleId: number): Observable<GoalDetail> {
     return this.http
-      .get<ApiResponse<GoalDetail>>(`${environment.apiBaseUrl}/goals/${goalId}`)
+      .get<ApiResponse<GoalDetail>>(`${environment.apiBaseUrl}/goals/${goalId}`, { params: { cycleId } })
       .pipe(map((response) => response.data));
   }
 
-  createGoal(payload: GoalUpsertRequest): Observable<GoalDetail> {
+  createGoal(cycleId: number, payload: GoalUpsertRequest): Observable<GoalDetail> {
     return this.http
-      .post<ApiResponse<GoalDetail>>(`${environment.apiBaseUrl}/goals`, payload)
+      .post<ApiResponse<GoalDetail>>(`${environment.apiBaseUrl}/goals`, payload, { params: { cycleId } })
       .pipe(map((response) => response.data));
   }
 
-  updateGoal(goalId: number, payload: GoalUpsertRequest): Observable<GoalDetail> {
+  updateGoal(goalId: number, cycleId: number, payload: GoalUpsertRequest): Observable<GoalDetail> {
     return this.http
-      .put<ApiResponse<GoalDetail>>(`${environment.apiBaseUrl}/goals/${goalId}`, payload)
+      .put<ApiResponse<GoalDetail>>(`${environment.apiBaseUrl}/goals/${goalId}`, payload, { params: { cycleId } })
       .pipe(map((response) => response.data));
   }
 
-  rateGoalAchievement(goalId: number, payload: GoalCalificacionRequest): Observable<GoalDetail> {
+  rateGoalAchievement(goalId: number, cycleId: number, payload: GoalCalificacionRequest): Observable<GoalDetail> {
     return this.http
-      .put<ApiResponse<GoalDetail>>(`${environment.apiBaseUrl}/goals/${goalId}/calificacion`, payload)
+      .put<ApiResponse<GoalDetail>>(`${environment.apiBaseUrl}/goals/${goalId}/calificacion`, payload, { params: { cycleId } })
       .pipe(map((response) => response.data));
   }
 

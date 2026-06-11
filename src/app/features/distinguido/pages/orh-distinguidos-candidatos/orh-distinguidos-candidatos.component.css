@@ -1,0 +1,46 @@
+.workspace { padding: 24px 16px; }
+.workspace__container { max-width: 1200px; margin: 0 auto; }
+
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #64748b; margin-bottom: 20px; }
+.breadcrumb a { color: #7f1714; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+.workspace__hero { margin-bottom: 20px; }
+.workspace__title { font-size: 1.4rem; font-weight: 800; color: #1e293b; margin: 0 0 4px; }
+.workspace__subtitle { font-size: 0.84rem; color: #64748b; margin: 0 0 6px; max-width: 720px; }
+.workspace__norma { font-size: 0.72rem; color: #94a3b8; margin: 0; }
+
+.loading-state { padding: 40px; text-align: center; color: #64748b; }
+
+.alerta { border-radius: 8px; padding: 10px 16px; font-size: 0.84rem; margin-bottom: 16px; }
+.alerta--error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.alerta--ok { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.alerta--warning { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+
+.resumen-card {
+  display: flex; gap: 20px; flex-wrap: wrap;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+  padding: 16px 20px; margin-bottom: 20px;
+}
+.resumen-card__item { display: flex; flex-direction: column; gap: 4px; min-width: 120px; }
+.resumen-card__label { font-size: 0.72rem; font-weight: 600; color: #64748b; text-transform: uppercase; }
+.resumen-card__value { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+
+.tabla-wrap { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+.tabla th, .tabla td { text-align: left; padding: 10px 12px; font-size: 0.84rem; }
+.tabla thead { background: #f8fafc; }
+.tabla tbody tr + tr td { border-top: 1px solid #eef1f7; }
+.tabla__row--bloqueada { background: #fffbeb; }
+
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+.badge--confirmacion[data-estado='SIN_SOLICITUD'] { background: #f1f5f9; color: #64748b; }
+.badge--confirmacion[data-estado='PENDIENTE'] { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.badge--confirmacion[data-estado='RESUELTA'] { background: #dcfce7; color: #15803d; }
+
+.check-label { display: inline-flex; align-items: center; cursor: pointer; }
+
+.btn { border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.84rem; padding: 8px 14px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn--primary { background: #7f1714; color: #fff; }
+.btn--primary:hover:not(:disabled) { background: #991b1b; }

@@ -1,0 +1,105 @@
+<section class="workspace" aria-labelledby="auditoria-title">
+  <div class="workspace__container">
+    <nav class="breadcrumb" aria-label="Ruta de navegación">
+      <a [routerLink]="cicloNavService.boardRoute()">{{ cicloNavService.boardLabel() }}</a>
+      <span aria-hidden="true">/</span>
+      <span>Auditoría</span>
+    </nav>
+
+    <header class="workspace__hero">
+      <div>
+        <h1 id="auditoria-title" class="workspace__title">Trazabilidad y auditoría</h1>
+        <p class="workspace__subtitle">
+          Consulta de eventos registrados en el sistema: autenticación, exportaciones, informes y acciones críticas.
+        </p>
+      </div>
+    </header>
+
+    <app-cycle-context-bar />
+
+    <form class="filters" [formGroup]="filtersForm" (ngSubmit)="buscar(0)" aria-label="Filtros de auditoría">
+      <label class="field">
+        <span>Código de evento</span>
+        <input type="text" formControlName="eventCode" placeholder="Ej. LOGIN_SUCCESS" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Usuario</span>
+        <input type="text" formControlName="principal" placeholder="Nombre de usuario" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Desde</span>
+        <input type="date" formControlName="from" />
+      </label>
+      <label class="field">
+        <span>Hasta</span>
+        <input type="date" formControlName="to" />
+      </label>
+      <div class="filters__actions" role="group" aria-label="Acciones de consulta">
+        <button type="submit" class="btn-primary" [disabled]="loading()" [attr.aria-busy]="loading()">
+          {{ loading() ? 'Consultando…' : 'Buscar' }}
+        </button>
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="exportarCsv()"
+          [disabled]="exporting()"
+          [attr.aria-busy]="exporting()"
+          aria-label="Exportar resultados a CSV"
+        >
+          {{ exporting() ? 'Exportando…' : 'Exportar CSV' }}
+        </button>
+      </div>
+    </form>
+
+    @if (error()) {
+      <div class="error-state" role="alert">{{ error() }}</div>
+    }
+    @if (downloadError()) {
+      <div class="error-state" role="alert" aria-live="polite">{{ downloadError() }}</div>
+    }
+
+    <section class="panel" aria-labelledby="eventos-title">
+      <header class="panel__header">
+        <h2 id="eventos-title" class="panel__title">Eventos ({{ totalElements() }})</h2>
+        <div class="pager" role="navigation" aria-label="Paginación de auditoría">
+          <button type="button" class="btn-secondary" (click)="paginaAnterior()" [disabled]="page() === 0 || loading()">
+            Anterior
+          </button>
+          <span class="pager__info">Página {{ page() + 1 }}</span>
+          <button type="button" class="btn-secondary" (click)="paginaSiguiente()" [disabled]="loading()">
+            Siguiente
+          </button>
+        </div>
+      </header>
+
+      @if (eventos().length === 0 && !loading()) {
+        <p class="panel__empty">No hay eventos para los filtros seleccionados.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table aria-label="Registro de eventos de auditoría">
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Evento</th>
+                <th scope="col">Usuario</th>
+                <th scope="col">Detalle</th>
+                <th scope="col">IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (evento of eventos(); track evento.id) {
+                <tr>
+                  <td>{{ evento.occurredAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                  <td><code class="code-tag">{{ evento.eventCode }}</code></td>
+                  <td>{{ evento.principal ?? '—' }}</td>
+                  <td>{{ evento.detail ?? '—' }}</td>
+                  <td>{{ evento.clientIp ?? '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+</section>

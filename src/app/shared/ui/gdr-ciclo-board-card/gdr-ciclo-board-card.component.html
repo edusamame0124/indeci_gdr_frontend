@@ -1,0 +1,113 @@
+@let r = resolved();
+@let entry = r.entry;
+@let msg = blockReasonMessage;
+
+<!-- Card de información transversal (no navegable, sin fase) -->
+@if (isInfo) {
+  <article
+    class="board-card board-card--info"
+    [attr.data-state]="r.state.toLowerCase()"
+    [attr.aria-label]="entry.title"
+  >
+    <div class="board-card__header">
+      <span class="board-card__eyebrow board-card__eyebrow--info">
+        <svg class="board-card__icon-sm" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-2.5a1 1 0 0 1 1 1V11a1 1 0 1 1-2 0V6.5a1 1 0 0 1 1-1Zm0-3a1.25 1.25 0 1 1 0 2.5A1.25 1.25 0 0 1 8 2.5Z"/>
+        </svg>
+        Nota informativa
+      </span>
+    </div>
+    <strong class="board-card__title">{{ entry.title }}</strong>
+    <p class="board-card__desc">{{ entry.description }}</p>
+    <span class="board-card__normativa">{{ entry.normativaRef }}</span>
+  </article>
+}
+
+<!-- Card navegable (ACTIVO, DISPONIBLE, SOLO_LECTURA) -->
+@else if (r.isNavigable) {
+  <a
+    [routerLink]="route"
+    class="board-card board-card--navigable"
+    [attr.data-state]="r.state.toLowerCase()"
+    [attr.aria-label]="entry.title + ' — ' + r.stateLabel"
+  >
+    <div class="board-card__header">
+      @if (phaseLabel) {
+        <span class="board-card__eyebrow">{{ phaseLabel }}</span>
+      }
+      <span class="board-card__badge" [attr.data-state]="r.state.toLowerCase()">
+        {{ r.stateLabel }}
+      </span>
+    </div>
+
+    <strong class="board-card__title">{{ entry.title }}</strong>
+    <p class="board-card__desc">{{ entry.description }}</p>
+
+    @if (r.state === 'SOLO_LECTURA') {
+      <span class="board-card__readonly-chip" aria-label="Solo lectura">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm0 2.5a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1Z"/>
+        </svg>
+        Consulta
+      </span>
+    }
+
+    <div class="board-card__footer">
+      <span class="board-card__normativa">{{ entry.normativaRef }}</span>
+      <span class="board-card__arrow" aria-hidden="true">
+        <svg viewBox="0 0 20 20"><path d="M7.5 4.5 13 10l-5.5 5.5-1.1-1.1L10.8 10 6.4 5.6l1.1-1.1Z"/></svg>
+      </span>
+    </div>
+  </a>
+}
+
+<!-- Card no navegable con estado (BLOQUEADO, PROXIMA_FASE, PENDIENTE_REQUISITOS, NO_APLICA) -->
+@else {
+  @if (r.state !== 'NO_APLICA') {
+    <article
+      class="board-card board-card--blocked"
+      [attr.data-state]="r.state.toLowerCase()"
+      [attr.aria-label]="entry.title + ' — ' + r.stateLabel"
+      aria-disabled="true"
+    >
+      <div class="board-card__header">
+        @if (phaseLabel) {
+          <span class="board-card__eyebrow">{{ phaseLabel }}</span>
+        }
+        <span class="board-card__badge" [attr.data-state]="r.state.toLowerCase()">
+          {{ r.stateLabel }}
+        </span>
+      </div>
+
+      <strong class="board-card__title">{{ entry.title }}</strong>
+      <p class="board-card__desc">{{ entry.description }}</p>
+
+      @if (msg) {
+        <div class="board-card__block-reason">
+          <span class="board-card__block-detail">{{ msg.detail }}</span>
+          @if (msg.suggestedAction) {
+            <span class="board-card__block-action">{{ msg.suggestedAction }}</span>
+          }
+        </div>
+      }
+
+      <span class="board-card__normativa">{{ entry.normativaRef }}</span>
+    </article>
+  }
+  <!-- NO_APLICA: tarjeta semi-transparente, no distrae -->
+  @else {
+    <article
+      class="board-card board-card--no-aplica"
+      [attr.data-state]="'no_aplica'"
+      aria-hidden="true"
+    >
+      <div class="board-card__header">
+        @if (phaseLabel) {
+          <span class="board-card__eyebrow">{{ phaseLabel }}</span>
+        }
+      </div>
+      <strong class="board-card__title">{{ entry.title }}</strong>
+      <p class="board-card__desc board-card__desc--muted">No aplica para su rol en este ciclo.</p>
+    </article>
+  }
+}

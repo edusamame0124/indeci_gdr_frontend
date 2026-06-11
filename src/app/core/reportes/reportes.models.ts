@@ -42,3 +42,10 @@ export interface ReporteOportunidadMejora {
   fechaCierre: string | null;
   totalSeguimientos: number;
 }
+
+export interface ReporteDistribucionCalificacion {
+  codigoCalificacion: string;
+  etiquetaCalificacion: string | null;
+  cantidad: number;
+  porcentaje: number;
+}

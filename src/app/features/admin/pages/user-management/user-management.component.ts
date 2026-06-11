@@ -1558,6 +1558,12 @@ export class UserManagementComponent {
         return 'Evaluado';
       case 'EVALUADOR_Y_EVALUADO':
         return 'Evaluador y evaluado';
+      case 'CIE':
+        return 'Comité Institucional de Evaluación';
+      case 'TITULAR':
+        return 'Titular / Alta Dirección';
+      case 'AUDITOR':
+        return 'Auditor / OCI';
       default:
         return 'Sin rol funcional GDR';
     }

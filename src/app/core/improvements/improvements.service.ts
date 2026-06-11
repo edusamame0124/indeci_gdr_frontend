@@ -14,17 +14,17 @@ import {
 export class ImprovementsService {
   private readonly http = inject(HttpClient);
 
-  listImprovements(evaluatedId: number): Observable<OportunidadMejoraResumen[]> {
+  listImprovements(evaluatedId: number, cycleId: number): Observable<OportunidadMejoraResumen[]> {
     return this.http
       .get<ApiResponse<OportunidadMejoraResumen[]>>(`${environment.apiBaseUrl}/oportunidades-mejora`, {
-        params: { evaluatedId }
+        params: { evaluatedId, cycleId }
       })
       .pipe(map((response) => response.data));
   }
 
-  createImprovement(payload: RegistrarOportunidadMejoraPayload): Observable<OportunidadMejoraDetalle> {
+  createImprovement(cycleId: number, payload: RegistrarOportunidadMejoraPayload): Observable<OportunidadMejoraDetalle> {
     return this.http
-      .post<ApiResponse<OportunidadMejoraDetalle>>(`${environment.apiBaseUrl}/oportunidades-mejora`, payload)
+      .post<ApiResponse<OportunidadMejoraDetalle>>(`${environment.apiBaseUrl}/oportunidades-mejora`, payload, { params: { cycleId } })
       .pipe(map((response) => response.data));
   }
 

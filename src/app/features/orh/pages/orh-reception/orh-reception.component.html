@@ -1,0 +1,399 @@
+<section class="workspace">
+  <div class="workspace__container">
+    <nav class="breadcrumb" aria-label="Ruta de navegacion">
+      <a [routerLink]="cicloNavService.boardRoute()">{{ cicloNavService.boardLabel() }}</a>
+      <span>/</span>
+      <span>Recepcion ORH</span>
+    </nav>
+
+    <header class="workspace__hero">
+      <div>
+        <p class="workspace__eyebrow">ORH institucional</p>
+        <h1 class="workspace__title">Recepcion ORH</h1>
+        <p class="workspace__subtitle">
+          Consulta inicial de solicitudes y envios recibidos para revision institucional.
+        </p>
+      </div>
+
+      <a [routerLink]="cicloNavService.boardRoute()" class="button button--secondary">Volver al dashboard</a>
+    </header>
+
+    <app-cycle-context-bar />
+
+    @if (profile(); as currentProfile) {
+      <section class="context-bar" aria-label="Contexto operativo">
+        <div class="context-bar__item">
+          <span class="context-bar__label">Ciclo activo</span>
+          <span class="context-bar__value">{{ currentProfile.context.cycleName || 'Sin ciclo activo' }}</span>
+        </div>
+        <div class="context-bar__divider"></div>
+        <div class="context-bar__item">
+          <span class="context-bar__label">Actor funcional</span>
+          <span class="context-bar__value">{{ currentProfile.context.functionalActor }}</span>
+        </div>
+        <div class="context-bar__divider"></div>
+        <div class="context-bar__item">
+          <span class="context-bar__label">Unidad organica</span>
+          <span class="context-bar__value">{{ currentProfile.context.orgUnitName || 'Sin unidad vinculada' }}</span>
+        </div>
+      </section>
+    }
+
+    @if (errorMessage()) {
+      <div class="alert alert--error" role="alert">
+        <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+        </svg>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    }
+
+    @if (successMessage()) {
+      <div class="alert alert--success" role="status">
+        <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm3.8 5.9-4.4 4.4-2.2-2.2-1.1 1.1 3.3 3.3 5.5-5.5-1.1-1.1Z"/>
+        </svg>
+        <span>{{ successMessage() }}</span>
+      </div>
+    }
+
+    <section class="reception-panel">
+      <div class="reception-panel__header">
+        <div>
+          <p class="reception-panel__eyebrow">Bandeja de lectura</p>
+          <h2 class="reception-panel__title">Registros recibidos</h2>
+          <p class="reception-panel__desc">
+            La recepcion ORH se muestra en secciones separadas. Esta version solo permite dejar constancia
+            minima de revision, sin aprobar, rechazar ni atender el fondo del registro.
+          </p>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Secciones de recepcion ORH">
+        <button
+          type="button"
+          role="tab"
+          [class.tabs__button--active]="activeTab() === 'changeRequests'"
+          [attr.aria-selected]="activeTab() === 'changeRequests'"
+          (click)="setActiveTab('changeRequests')"
+        >
+          Solicitudes de modificacion
+          <span>{{ changeRequests().length }}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          [class.tabs__button--active]="activeTab() === 'submissions'"
+          [attr.aria-selected]="activeTab() === 'submissions'"
+          (click)="setActiveTab('submissions')"
+        >
+          Envios a ORH
+          <span>{{ submissions().length }}</span>
+        </button>
+      </div>
+
+      @if (loading()) {
+        <div class="loading-state">
+          <div class="loading-spinner"></div>
+          <span>Cargando recepcion ORH...</span>
+        </div>
+      } @else if (activeTab() === 'changeRequests') {
+        @if (changeRequests().length === 0) {
+          <div class="empty-state">
+            <strong>No hay solicitudes de modificacion pendientes.</strong>
+            <span>Cuando existan solicitudes activas del ciclo, apareceran en esta seccion.</span>
+          </div>
+        } @else {
+          <div class="data-table" role="region" aria-label="Solicitudes de modificacion">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Meta</th>
+                  <th>Evaluado</th>
+                  <th>Tipo</th>
+                  <th>Solicitante</th>
+                  <th>Estado</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of changeRequests(); track item.id) {
+                  <tr>
+                    <td>{{ item.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                      <div class="primary-cell">
+                        <strong>{{ item.goalTitle || 'Sin meta' }}</strong>
+                        <span>{{ item.indicatorName || 'Sin indicador' }}</span>
+                      </div>
+                    </td>
+                    <td>{{ item.evaluatedName || 'Sin evaluado' }}</td>
+                    <td>{{ item.requestTypeName || item.requestType }}</td>
+                    <td>{{ item.requestedByUsername || 'Sin usuario' }}</td>
+                    <td>
+                      <span [class]="changeRequestStatusClass(item.status)">
+                        {{ item.statusName || item.status }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (canReviewChangeRequest(item)) {
+                        <button
+                          class="button button--action"
+                          type="button"
+                          (click)="openReviewModal('changeRequest', item)"
+                        >
+                          Marcar como revisado
+                        </button>
+                      } @else {
+                        <span class="muted-text">Sin accion</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="cards-list" aria-label="Solicitudes de modificacion">
+            @for (item of changeRequests(); track item.id) {
+              <article class="record-card">
+                <div class="record-card__header">
+                  <div>
+                    <span class="record-card__date">{{ item.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                    <h3>{{ item.goalTitle || 'Sin meta' }}</h3>
+                  </div>
+                  <span [class]="changeRequestStatusClass(item.status)">
+                    {{ item.statusName || item.status }}
+                  </span>
+                </div>
+                <dl class="record-card__details">
+                  <div>
+                    <dt>Evaluado</dt>
+                    <dd>{{ item.evaluatedName || 'Sin evaluado' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Tipo</dt>
+                    <dd>{{ item.requestTypeName || item.requestType }}</dd>
+                  </div>
+                  <div>
+                    <dt>Solicitante</dt>
+                    <dd>{{ item.requestedByUsername || 'Sin usuario' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Indicador</dt>
+                    <dd>{{ item.indicatorName || 'Sin indicador' }}</dd>
+                  </div>
+                </dl>
+                @if (canReviewChangeRequest(item)) {
+                  <button
+                    class="button button--action"
+                    type="button"
+                    (click)="openReviewModal('changeRequest', item)"
+                  >
+                    Marcar como revisado
+                  </button>
+                }
+              </article>
+            }
+          </div>
+        }
+      } @else {
+        @if (submissions().length === 0) {
+          <div class="empty-state">
+            <strong>No hay envios a ORH recibidos.</strong>
+            <span>Cuando existan remisiones activas del ciclo, apareceran en esta seccion.</span>
+          </div>
+        } @else {
+          <div class="data-table" role="region" aria-label="Envios a ORH">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Meta</th>
+                  <th>Evaluado</th>
+                  <th>Enviado por</th>
+                  <th>Actor</th>
+                  <th>Estado</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of submissions(); track item.id) {
+                  <tr>
+                    <td>{{ item.submittedAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                      <div class="primary-cell">
+                        <strong>{{ item.goalTitle || 'Sin meta' }}</strong>
+                        <span>{{ item.indicatorName || 'Sin indicador' }}</span>
+                      </div>
+                    </td>
+                    <td>{{ item.evaluatedName || 'Sin evaluado' }}</td>
+                    <td>{{ item.submittedByUsername || 'Sin usuario' }}</td>
+                    <td>{{ item.submittedFunctionalActor || 'Sin actor' }}</td>
+                    <td>
+                      <span [class]="submissionStatusClass(item.status)">
+                        {{ item.statusName || item.status }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (canReviewSubmission(item)) {
+                        <button
+                          class="button button--action"
+                          type="button"
+                          (click)="openReviewModal('submission', item)"
+                        >
+                          Marcar como revisado
+                        </button>
+                      } @else {
+                        <span class="muted-text">Sin accion</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="cards-list" aria-label="Envios a ORH">
+            @for (item of submissions(); track item.id) {
+              <article class="record-card">
+                <div class="record-card__header">
+                  <div>
+                    <span class="record-card__date">{{ item.submittedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                    <h3>{{ item.goalTitle || 'Sin meta' }}</h3>
+                  </div>
+                  <span [class]="submissionStatusClass(item.status)">
+                    {{ item.statusName || item.status }}
+                  </span>
+                </div>
+                <dl class="record-card__details">
+                  <div>
+                    <dt>Evaluado</dt>
+                    <dd>{{ item.evaluatedName || 'Sin evaluado' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Enviado por</dt>
+                    <dd>{{ item.submittedByUsername || 'Sin usuario' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Actor</dt>
+                    <dd>{{ item.submittedFunctionalActor || 'Sin actor' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Indicador</dt>
+                    <dd>{{ item.indicatorName || 'Sin indicador' }}</dd>
+                  </div>
+                </dl>
+                @if (canReviewSubmission(item)) {
+                  <button
+                    class="button button--action"
+                    type="button"
+                    (click)="openReviewModal('submission', item)"
+                  >
+                    Marcar como revisado
+                  </button>
+                }
+              </article>
+            }
+          </div>
+        }
+      }
+    </section>
+
+    @if (reviewTarget(); as target) {
+      <div class="modal-backdrop" role="presentation">
+        <section
+          class="modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="review-modal-title"
+        >
+          <div class="modal__header">
+            <div>
+              <p class="modal__eyebrow">Revision ORH</p>
+              <h2 id="review-modal-title">Marcar como revisado</h2>
+            </div>
+            <button
+              class="modal__close"
+              type="button"
+              aria-label="Cerrar"
+              [disabled]="reviewSubmitting()"
+              (click)="closeReviewModal()"
+            >
+              x
+            </button>
+          </div>
+
+          <div class="modal__context">
+            <div>
+              <span>Tipo de registro</span>
+              <strong>{{ reviewTypeLabel(target) }}</strong>
+            </div>
+            <div>
+              <span>Meta</span>
+              <strong>{{ reviewGoalTitle(target) }}</strong>
+            </div>
+            <div>
+              <span>Evaluado</span>
+              <strong>{{ reviewEvaluatedName(target) }}</strong>
+            </div>
+            <div>
+              <span>Fecha principal</span>
+              <strong>{{ reviewDate(target) | date:'dd/MM/yyyy HH:mm' }}</strong>
+            </div>
+            <div>
+              <span>Estado actual</span>
+              <strong>{{ reviewStatusLabel(target) }}</strong>
+            </div>
+          </div>
+
+          @if (reviewError()) {
+            <div class="alert alert--error modal__alert" role="alert">
+              <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
+              </svg>
+              <span>{{ reviewError() }}</span>
+            </div>
+          }
+
+          <form class="modal__form" (submit)="submitReview($event)">
+            <p class="modal__help">
+              Esta accion solo registra que ORH reviso el registro. No aprueba, rechaza ni resuelve el fondo.
+            </p>
+
+            <label class="form-field" for="orh-review-comment">
+              <span>Comentario ORH opcional</span>
+              <textarea
+                id="orh-review-comment"
+                rows="4"
+                maxlength="1000"
+                placeholder="Agregue un comentario breve si corresponde."
+                [value]="reviewComment()"
+                [disabled]="reviewSubmitting()"
+                (input)="updateReviewComment($event)"
+              ></textarea>
+            </label>
+
+            <div class="modal__actions">
+              <button
+                class="button button--secondary"
+                type="button"
+                [disabled]="reviewSubmitting()"
+                (click)="closeReviewModal()"
+              >
+                Cancelar
+              </button>
+              <button
+                class="button button--primary"
+                type="submit"
+                [disabled]="!canSubmitReview()"
+              >
+                {{ reviewSubmitting() ? 'Registrando...' : 'Confirmar revision' }}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    }
+  </div>
+</section>

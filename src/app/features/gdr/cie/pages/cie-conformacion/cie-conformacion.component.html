@@ -1,0 +1,322 @@
+<nav class="breadcrumb" aria-label="Navegación">
+  <a [routerLink]="cicloNavService.boardRoute()" class="breadcrumb__link">{{ cicloNavService.boardLabel() }}</a>
+  <span class="breadcrumb__sep">›</span>
+  <a [routerLink]="cicloNavService.moduleRoute('cie')" class="breadcrumb__link">CIE</a>
+  <span class="breadcrumb__sep">›</span>
+  <span class="breadcrumb__current">Conformación CIE</span>
+</nav>
+
+<section class="page-hero">
+  <div class="hero-meta">
+    <div class="hero-icon">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.97 5.97 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 14.094A5.97 5.97 0 004 17v1H1v-1a3 3 0 013.75-2.906z"/>
+      </svg>
+    </div>
+    <div>
+      <h1 class="hero-title">Conformación del CIE</h1>
+      <p class="hero-desc">
+        Registro y gestión de la conformación del Comité Institucional de Evaluación.
+        Referencia: RPE 068-2020-SERVIR-PE Art. 42-48.
+      </p>
+    </div>
+  </div>
+  <div class="hero-actions">
+    @if (vigentesCount() > 0) {
+      <span class="badge badge--verde">{{ vigentesCount() }} vigente{{ vigentesCount() > 1 ? 's' : '' }}</span>
+    }
+    @if (puedeRegistrar() && !modoForm()) {
+      <button class="btn btn--primary" (click)="abrirForm()" type="button">
+        + Nueva conformación
+      </button>
+    }
+  </div>
+</section>
+
+<app-cycle-context-bar />
+
+<!-- Mensaje de éxito -->
+@if (exitoMensaje()) {
+  <div class="alerta alerta--exito" role="status">
+    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+    </svg>
+    {{ exitoMensaje() }}
+  </div>
+}
+
+<!-- Error global -->
+@if (error()) {
+  <div class="alerta alerta--error" role="alert">
+    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+    </svg>
+    {{ error() }}
+  </div>
+}
+
+<!-- Formulario de nueva conformación -->
+@if (modoForm()) {
+  <div class="form-panel">
+    <div class="form-panel__header">
+      <h2>Registrar nueva conformación</h2>
+      <p class="form-panel__desc">
+        Complete los datos de la resolución de conformación y los integrantes del CIE.
+        El rol TITULAR_ORH (Jefe de ORH o representante) es obligatorio.
+      </p>
+    </div>
+
+    <div class="form-grid">
+      <label class="campo">
+        N° resolución de conformación
+        <input type="text" [value]="resolucionNumero()"
+               (input)="resolucionNumero.set($any($event.target).value)"
+               placeholder="Ej: 012-2026-OEA/INDECI"
+               class="campo__input" />
+      </label>
+      <label class="campo">
+        Fecha de resolución
+        <input type="date" [value]="resolucionFecha()"
+               (input)="resolucionFecha.set($any($event.target).value)"
+               class="campo__input" />
+      </label>
+      <label class="campo campo--req">
+        Vigencia desde *
+        <input type="date" [value]="vigenciaInicio()"
+               (input)="vigenciaInicio.set($any($event.target).value)"
+               class="campo__input" required />
+      </label>
+      <label class="campo">
+        Vigencia hasta
+        <input type="date" [value]="vigenciaFin()"
+               (input)="vigenciaFin.set($any($event.target).value)"
+               class="campo__input" />
+      </label>
+    </div>
+
+    <label class="campo campo--full">
+      Observaciones
+      <textarea [value]="observaciones()"
+                (input)="observaciones.set($any($event.target).value)"
+                rows="3" maxlength="2000"
+                class="campo__input"
+                placeholder="Notas adicionales sobre esta conformación..."></textarea>
+    </label>
+
+    <!-- Integrantes -->
+    <div class="integrantes-header">
+      <h3>Integrantes del CIE</h3>
+      <button class="btn btn--secondary btn--sm" type="button" (click)="agregarIntegrante()">
+        + Agregar integrante
+      </button>
+    </div>
+
+    <div class="nota-normativa">
+      Debe incluir: <strong>TITULAR_ORH</strong> (1er integrante),
+      <strong>REP_EVALUADOS_SEG</strong> por segmento (2do), y opcionalmente
+      <strong>DESIGNADO_CASO</strong> y <strong>ACCESITARIO</strong>.
+    </div>
+
+    @for (integ of integrantes(); track $index) {
+      <div class="integrante-row">
+        <div class="integrante-row__num">{{ $index + 1 }}</div>
+        <div class="integrante-row__fields">
+          <label class="campo campo--req">
+            Rol *
+            <select class="campo__input"
+                    [value]="integ.rolCie"
+                    (change)="actualizarIntegrante($index, 'rolCie', $any($event.target).value)">
+              <option value="">Seleccione rol...</option>
+              @for (rol of rolesCie; track rol) {
+                <option [value]="rol">{{ rolesLabels[rol] }}</option>
+              }
+            </select>
+          </label>
+          @if (integ.rolCie === 'REP_EVALUADOS_SEG') {
+            <label class="campo">
+              Segmento representado
+              <input type="text" class="campo__input"
+                     [value]="integ.segmento"
+                     (input)="actualizarIntegrante($index, 'segmento', $any($event.target).value)"
+                     placeholder="Nombre del segmento..." />
+            </label>
+          }
+          <label class="campo">
+            Nombre del integrante
+            <input type="text" class="campo__input"
+                   [value]="integ.nombreExterno"
+                   (input)="actualizarIntegrante($index, 'nombreExterno', $any($event.target).value)"
+                   placeholder="Apellidos y nombres completos" />
+          </label>
+          <label class="campo">
+            Cargo / función en el CIE
+            <input type="text" class="campo__input"
+                   [value]="integ.cargoDescripcion"
+                   (input)="actualizarIntegrante($index, 'cargoDescripcion', $any($event.target).value)"
+                   placeholder="Ej: Jefe de la Oficina de RR. HH." />
+          </label>
+          <label class="campo campo--req">
+            Fecha de inicio *
+            <input type="date" class="campo__input"
+                   [value]="integ.fechaInicio"
+                   (input)="actualizarIntegrante($index, 'fechaInicio', $any($event.target).value)" />
+          </label>
+          <label class="campo">
+            Fecha de fin
+            <input type="date" class="campo__input"
+                   [value]="integ.fechaFin"
+                   (input)="actualizarIntegrante($index, 'fechaFin', $any($event.target).value)" />
+          </label>
+        </div>
+        @if (integrantes().length > 1) {
+          <button class="btn-quitar" type="button" (click)="quitarIntegrante($index)"
+                  title="Quitar integrante" [attr.aria-label]="'Quitar integrante ' + ($index + 1)">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+        }
+      </div>
+    }
+
+    <div class="form-actions">
+      @if (!guardando()) {
+        <button class="btn btn--secondary" type="button" (click)="cancelarForm()">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="guardar()">Registrar conformación</button>
+      } @else {
+        <div class="confirmacion-inline" role="status">
+          <span class="spinner" aria-label="Guardando..."></span>
+          Registrando conformación...
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Lista de conformaciones -->
+@if (loading()) {
+  <div class="estado-carga" aria-busy="true">
+    <span class="spinner"></span>
+    Cargando conformaciones...
+  </div>
+} @else if (!modoForm()) {
+  @if (conformaciones().length === 0) {
+    <div class="estado-vacio" role="status">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+      </svg>
+      <p>No hay conformaciones registradas.</p>
+      @if (puedeRegistrar()) {
+        <p class="estado-vacio__hint">Use el botón <strong>Nueva conformación</strong> para registrar la primera.</p>
+      }
+    </div>
+  } @else {
+    <div class="lista-conformaciones">
+      @for (conf of conformaciones(); track conf.id) {
+        <div class="conf-card" [class.conf-card--seleccionada]="seleccionada()?.id === conf.id"
+             (click)="seleccionar(conf)">
+          <div class="conf-card__header">
+            <div class="conf-card__titulo">
+              <span class="conf-card__alcance">{{ conf.cycleNombre }}</span>
+              @if (conf.resolucionNumero) {
+                <span class="conf-card__resolucion">Res. {{ conf.resolucionNumero }}</span>
+              }
+            </div>
+            <span [class]="estadoBadge(conf.estado)">{{ conf.estadoLabel }}</span>
+          </div>
+
+          <div class="conf-card__vigencia">
+            Vigencia: {{ conf.vigenciaInicio | date:'dd/MM/yyyy' }}
+            @if (conf.vigenciaFin) {
+              — {{ conf.vigenciaFin | date:'dd/MM/yyyy' }}
+            } @else {
+              — sin fecha de término
+            }
+          </div>
+
+          <div class="conf-card__integrantes">
+            {{ conf.integrantes.length }} integrante{{ conf.integrantes.length !== 1 ? 's' : '' }}
+          </div>
+
+          <!-- Detalle expandible -->
+          @if (seleccionada()?.id === conf.id) {
+            <div class="conf-detalle" (click)="$event.stopPropagation()">
+              <table class="tabla-integrantes" aria-label="Integrantes del CIE">
+                <thead>
+                  <tr>
+                    <th scope="col">Rol</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Cargo</th>
+                    <th scope="col">Vigencia</th>
+                    <th scope="col">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (integ of conf.integrantes; track integ.id) {
+                    <tr>
+                      <td class="td-rol">{{ rolesLabels[integ.rolCie] || integ.rolCie }}</td>
+                      <td>{{ integ.nombreDisplay }}</td>
+                      <td class="td-cargo">{{ integ.cargoDescripcion ?? '—' }}</td>
+                      <td class="td-vigencia">
+                        {{ integ.fechaInicio | date:'dd/MM/yyyy' }}
+                        @if (integ.fechaFin) { — {{ integ.fechaFin | date:'dd/MM/yyyy' }} }
+                      </td>
+                      <td>
+                        <span class="badge badge--sm"
+                              [class.badge--verde]="integ.estado === 'ACTIVO'"
+                              [class.badge--gris]="integ.estado !== 'ACTIVO'">
+                          {{ integ.estado }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+
+              @if (conf.observaciones) {
+                <p class="detalle-obs">
+                  <strong>Observaciones:</strong> {{ conf.observaciones }}
+                </p>
+              }
+
+              <!-- Anular -->
+              @if (puedeRegistrar() && conf.estado === 'VIGENTE') {
+                @if (confirmandoAnular() !== conf.id) {
+                  <div class="detalle-acciones">
+                    <button class="btn btn--danger-outline btn--sm" type="button"
+                            (click)="iniciarAnular(conf.id)">
+                      Anular conformación
+                    </button>
+                  </div>
+                } @else {
+                  <div class="confirmacion-inline" role="alertdialog"
+                       aria-label="Confirmar anulación">
+                    <p class="confirmacion-inline__texto">
+                      ¿Confirma la anulación de esta conformación? Esta acción no se puede deshacer.
+                    </p>
+                    <div class="confirmacion-inline__acciones">
+                      <button class="btn btn--danger btn--sm" type="button"
+                              [disabled]="anulando()"
+                              (click)="confirmarAnular(conf.id)">
+                        {{ anulando() ? 'Anulando...' : 'Sí, anular' }}
+                      </button>
+                      <button class="btn btn--secondary btn--sm" type="button"
+                              [disabled]="anulando()"
+                              (click)="cancelarAnular()">
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+}
+
+<p class="ref-normativa">
+  Referencia: RPE 068-2020-SERVIR-PE Art. 42-48 | POSIBLE_CAMBIO_RRHH_GDR_001
+</p>
