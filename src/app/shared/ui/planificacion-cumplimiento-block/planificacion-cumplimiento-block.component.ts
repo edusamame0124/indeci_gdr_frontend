@@ -38,14 +38,6 @@ function buildChecklist(ctx: CicloBoardContext | null): ChecklistItemUi[] {
       status: c == null ? 'pending' : c.participantesRegistrados ? 'passed' : 'failed',
     },
     {
-      code: 'REQ-04',
-      title: 'Asignaciones evaluador-evaluado completas',
-      detail: 'Todos los participantes deben tener asignación activa.',
-      normativaRef: 'RPE 068-2020 Art. 15-20',
-      tipo: 'obligatorio',
-      status: c == null ? 'pending' : c.asignacionesCompletas ? 'passed' : 'failed',
-    },
-    {
       code: 'REQ-05',
       title: 'Indicadores habilitados',
       detail: 'Al menos un indicador habilitado para el ciclo.',

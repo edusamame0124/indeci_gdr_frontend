@@ -20,7 +20,7 @@ export interface GoalSummary {
 
 export interface GoalDetail {
   id: number;
-  assignmentId: number;
+  evaluatedPersonId: number;
   cycleName: string;
   evaluatorName: string;
   evaluatedName: string;
@@ -39,7 +39,7 @@ export interface GoalDetail {
 }
 
 export interface GoalUpsertRequest {
-  assignmentId: number;
+  evaluatedPersonId: number;
   indicatorId: number;
   title: string;
   description: string | null;

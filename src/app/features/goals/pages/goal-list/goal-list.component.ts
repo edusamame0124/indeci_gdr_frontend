@@ -13,8 +13,8 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { finalize, take } from 'rxjs';
 import { FinalEvaluationService } from '../../../../core/final-evaluation/final-evaluation.service';
 import { AuthService } from '../../../../core/auth/auth.service';
-import { HrAssignmentSummary } from '../../../../core/hr/hr.models';
-import { HrService } from '../../../../core/hr/hr.service';
+import { ParticipantListItemResponse } from '../../../../core/models/participants.models';
+import { ParticipantsService } from '../../../../core/services/participants.service';
 import { Indicator } from '../../../../core/indicators/indicators.models';
 import { IndicatorsService } from '../../../../core/indicators/indicators.service';
 import {
@@ -155,14 +155,14 @@ export class GoalListComponent {
   private readonly router = inject(Router);
   readonly cicloNavService = inject(CicloNavService);
   private readonly authService = inject(AuthService);
-  private readonly hrService = inject(HrService);
+  private readonly participantsService = inject(ParticipantsService);
   private readonly indicatorsService = inject(IndicatorsService);
   private readonly goalsService = inject(GoalsService);
   private readonly finalEvaluationService = inject(FinalEvaluationService);
   private readonly toastService = inject(UiToastService);
 
   readonly goals = signal<GoalSummary[]>([]);
-  readonly assignments = signal<HrAssignmentSummary[]>([]);
+  readonly evaluatedPersons = signal<ParticipantListItemResponse[]>([]);
   readonly indicators = signal<Indicator[]>([]);
   readonly selectedIndicator = signal<Indicator | null>(null);
   readonly indicatorSearch = signal('');
@@ -249,7 +249,7 @@ export class GoalListComponent {
   });
 
   readonly form = this.fb.group({
-    assignmentId: [null as number | null, [Validators.required]],
+    evaluatedPersonId: [null as number | null, [Validators.required]],
     indicatorId: [null as number | null, [Validators.required]],
     title: ['', [Validators.required]],
     description: [''],
@@ -832,7 +832,7 @@ export class GoalListComponent {
     this.saving.set(false);
     this.handledRouteKey = '';
     this.form.reset({
-      assignmentId: null,
+      evaluatedPersonId: null,
       indicatorId: null,
       title: '',
       description: '',
@@ -878,7 +878,7 @@ export class GoalListComponent {
     }
 
     const payload: GoalUpsertRequest = {
-      assignmentId: raw.assignmentId as number,
+      evaluatedPersonId: raw.evaluatedPersonId as number,
       indicatorId: raw.indicatorId as number,
       title: (raw.title ?? '').trim(),
       description: (raw.description ?? '').trim() || null,
@@ -916,15 +916,17 @@ export class GoalListComponent {
     this.loading.set(true);
     this.errorMessage.set('');
     if (!this.canManageGoals()) {
-      this.assignments.set([]);
+      this.evaluatedPersons.set([]);
       this.indicators.set([]);
       this.loadGoals();
       return;
     }
 
-    this.hrService.listAssignments().subscribe({
-      next: (assignments) => {
-        this.assignments.set(assignments);
+    this.participantsService.listParticipants(this.cicloNavService.cicloId()!).subscribe({
+      next: (participants) => {
+        this.evaluatedPersons.set(
+          participants.filter((person) => person.role === 'EVALUADO' || person.role === 'MIXTO')
+        );
         this.indicatorsService.listIndicators().subscribe({
           next: (indicators) => {
             this.indicators.set(indicators);
@@ -937,7 +939,7 @@ export class GoalListComponent {
         });
       },
       error: () => {
-        this.errorMessage.set('No fue posible cargar las asignaciones activas.');
+        this.errorMessage.set('No fue posible cargar los participantes del ciclo.');
         this.loading.set(false);
       }
     });
@@ -1051,7 +1053,7 @@ export class GoalListComponent {
       this.formError.set('');
       this.modalOpen.set(true);
       this.form.reset({
-        assignmentId: null,
+        evaluatedPersonId: null,
         indicatorId: null,
         title: '',
         description: '',
@@ -1078,7 +1080,7 @@ export class GoalListComponent {
           this.syncSelectedIndicator(goal.indicatorId);
           this.modalOpen.set(true);
           this.form.reset({
-            assignmentId: goal.assignmentId,
+            evaluatedPersonId: goal.evaluatedPersonId,
             indicatorId: goal.indicatorId,
             title: goal.title,
             description: goal.description ?? '',

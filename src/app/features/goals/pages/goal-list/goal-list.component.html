@@ -491,12 +491,12 @@
 
       <form [formGroup]="form" (ngSubmit)="saveGoal()" class="form-grid">
         <label class="field">
-          <span class="field__label">Asignación <span class="field__required">*</span></span>
-          <select formControlName="assignmentId">
+          <span class="field__label">Persona a evaluar <span class="field__required">*</span></span>
+          <select formControlName="evaluatedPersonId">
             <option [ngValue]="null">Seleccione</option>
-            @for (assignment of assignments(); track assignment.assignmentId) {
-              <option [ngValue]="assignment.assignmentId">
-                {{ assignment.evaluatedName }} - {{ assignment.cycleName }}
+            @for (person of evaluatedPersons(); track person.personId) {
+              <option [ngValue]="person.personId">
+                {{ person.displayName }} - {{ person.documentNumber }}
               </option>
             }
           </select>

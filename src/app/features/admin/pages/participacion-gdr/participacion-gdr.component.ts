@@ -1,27 +1,18 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { finalize, forkJoin } from 'rxjs';
-import {
-  AssignmentDetailResponse,
-  AssignmentListItemResponse,
-  AssignmentPersonOptionResponse,
-  AssignmentStatus,
-  AssignmentStatusFilter,
-  AssignmentSummaryByPersonResponse,
-  CreateAssignmentRequest,
-  ResolvedFunctionalActor,
-  UpdateAssignmentRequest
-} from '../../../../core/admin/assignments.models';
+import { finalize } from 'rxjs';
+import { AssignmentListItemResponse, AssignmentPersonOptionResponse } from '../../../../core/admin/assignments.models';
 import { AssignmentsService } from '../../../../core/admin/assignments.service';
 import { CycleOptionResponse } from '../../../../core/admin/cycles.models';
 import { CyclesService } from '../../../../core/admin/cycles.service';
 import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
+import { ParticipantsService } from '../../../../core/services/participants.service';
+import { ParticipantListItemResponse } from '../../../../core/models/participants.models';
 
-type TabKey = 'relations' | 'summary';
-type AssignmentModalMode = 'create' | 'edit';
-type StatusToggleTarget = { assignment: AssignmentListItemResponse; nextStatus: AssignmentStatus };
-type PersonRole = 'evaluator' | 'evaluated';
+type ParticipantStatusFilter = 'ACTIVE' | 'INACTIVE' | 'ALL';
+type ParticipantRole = 'EVALUADOR' | 'EVALUADO';
+type TabKey = 'participants' | 'generated_relations';
 
 @Component({
   selector: 'app-participacion-gdr',
@@ -43,9 +34,8 @@ type PersonRole = 'evaluator' | 'evaluated';
             <p class="workspace__eyebrow">Administracion del sistema</p>
             <h1 class="workspace__title">Participacion GDR por ciclo</h1>
             <p class="workspace__subtitle">
-              Define quien evalua a quien en cada ciclo. El sistema calcula automaticamente el actor
-              funcional (Evaluador, Evaluado o Mixto) a partir de las relaciones registradas. El actor
-              funcional no se asigna manualmente.
+              Asigna a cada persona su rol GDR dentro del ciclo (Evaluador o Evaluado). Si una persona
+              recibe ambos roles, el sistema la marca automaticamente como Mixto.
             </p>
           </div>
 
@@ -53,13 +43,13 @@ type PersonRole = 'evaluator' | 'evaluated';
             <button
               class="button button--primary"
               type="button"
-              [disabled]="!canCreateRelation()"
-              (click)="openCreateModal()"
+              [disabled]="!canAssignRole()"
+              (click)="openAssignModal()"
             >
               <svg class="button__icon" viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
               </svg>
-              Nueva relacion
+              Nueva asignación de rol
             </button>
             <a [routerLink]="cicloNavService.boardRoute()" class="button button--secondary">
               <svg class="button__icon" viewBox="0 0 20 20" aria-hidden="true">
@@ -105,6 +95,7 @@ type PersonRole = 'evaluator' | 'evaluated';
             </select>
           </label>
 
+          @if (currentTab() === 'participants') {
           <label class="filters__field" for="status-filter">
             <span>Estado</span>
             <select
@@ -131,17 +122,17 @@ type PersonRole = 'evaluator' | 'evaluated';
               (input)="onSearchChange(eventValue($event))"
             />
           </label>
+          }
         </section>
 
         @if (showHelpBanner()) {
           <aside class="help-banner" role="note">
             <div class="help-banner__body">
-              <strong>Como se calcula el actor funcional</strong>
+              <strong>Como se asignan los roles</strong>
               <ul>
-                <li>Si una persona aparece como <strong>evaluadora</strong> de alguien, queda como <strong>EVALUADOR</strong>.</li>
-                <li>Si aparece como <strong>evaluada</strong> por alguien, queda como <strong>EVALUADO</strong>.</li>
-                <li>Si aparece en <strong>ambos lados</strong>, queda como <strong>MIXTO</strong> (Evaluador y Evaluado).</li>
-                <li>Si <strong>no aparece</strong> en ninguna relacion del ciclo, queda como <strong>Sin rol funcional GDR</strong>.</li>
+                <li>Asigna a la persona el rol <strong>EVALUADOR</strong> o <strong>EVALUADO</strong> dentro del ciclo.</li>
+                <li>Si una persona recibe <strong>ambos roles</strong>, el sistema la marca como <strong>MIXTO</strong>.</li>
+                <li>Solo aparecen personas con usuario activo y rol GDR_USUARIO.</li>
               </ul>
             </div>
             <button type="button" class="button button--compact button--secondary" (click)="dismissHelpBanner()">
@@ -165,238 +156,197 @@ type PersonRole = 'evaluator' | 'evaluated';
           <button
             type="button"
             role="tab"
-            [attr.aria-selected]="activeTab() === 'relations'"
             class="tabs__item"
-            [class.tabs__item--active]="activeTab() === 'relations'"
-            (click)="onTabChange('relations')"
+            [class.tabs__item--active]="currentTab() === 'participants'"
+            [attr.aria-selected]="currentTab() === 'participants'"
+            (click)="switchTab('participants')"
           >
-            Relaciones del ciclo
+            Participantes del ciclo
           </button>
           <button
             type="button"
             role="tab"
-            [attr.aria-selected]="activeTab() === 'summary'"
             class="tabs__item"
-            [class.tabs__item--active]="activeTab() === 'summary'"
-            (click)="onTabChange('summary')"
+            [class.tabs__item--active]="currentTab() === 'generated_relations'"
+            [attr.aria-selected]="currentTab() === 'generated_relations'"
+            (click)="switchTab('generated_relations')"
           >
-            Resumen por persona
+            Relaciones generadas (auditoría)
           </button>
         </nav>
 
+        @if (currentTab() === 'participants') {
         @if (loading()) {
           <div class="loading-state">
             <div class="loading-spinner"></div>
             <span>Cargando informacion...</span>
           </div>
-        } @else if (activeTab() === 'relations') {
+        } @else {
           <section class="panel">
             <div class="panel__header">
               <div>
-                <p class="panel__eyebrow">Relaciones del ciclo</p>
+                <p class="panel__eyebrow">Participantes del ciclo</p>
                 <h2 class="panel__title">{{ selectedCycle()?.name || 'Sin ciclo seleccionado' }}</h2>
                 <p class="panel__desc">
-                  Listado de pares evaluador a evaluado registrados para el ciclo seleccionado.
+                  Listado de participantes y sus roles asignados en el ciclo.
                 </p>
               </div>
-              <span class="panel__count">{{ filteredAssignments().length }} relaciones</span>
+              <span class="panel__count">{{ filteredParticipants().length }} participantes</span>
             </div>
 
-            @if (filteredAssignments().length === 0) {
+            @if (filteredParticipants().length === 0) {
               <div class="empty-state">
-                <strong>Aun no se han registrado relaciones para este ciclo.</strong>
-                @if (canCreateRelation()) {
-                  <span>Use Nueva relacion para comenzar.</span>
-                }
+                <strong>Aun no se han registrado participantes para este ciclo.</strong>
+                <span>Use Nueva asignación de rol para comenzar.</span>
               </div>
             } @else {
-              <div class="data-table" role="region" aria-label="Relaciones del ciclo">
+              <div class="data-table" role="region" aria-label="Participantes del ciclo">
                 <table>
                   <thead>
                     <tr>
-                      <th>Evaluador</th>
-                      <th>Evaluado</th>
-                      <th>Unidad del evaluado</th>
+                      <th>Nombre Completo</th>
+                      <th>Rol Asignado</th>
+                      <th>Area</th>
                       <th>Estado</th>
                       <th>Creada</th>
-                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    @for (item of filteredAssignments(); track item.id) {
+                    @for (item of filteredParticipants(); track item.participantId) {
                       <tr>
                         <td>
                           <div class="person-cell">
-                            <strong>{{ item.evaluator.displayName }}</strong>
-                            <small>{{ item.evaluator.documentNumber }} - {{ item.evaluator.orgUnitName || 'Sin unidad' }}</small>
+                            <strong>{{ item.displayName }}</strong>
+                            <small>{{ item.documentNumber }}</small>
                           </div>
                         </td>
                         <td>
-                          <div class="person-cell">
-                            <strong>{{ item.evaluated.displayName }}</strong>
-                            <small>{{ item.evaluated.documentNumber }}</small>
-                          </div>
+                          <span [class]="roleClass(item.role)">{{ roleLabel(item.role) }}</span>
                         </td>
-                        <td>{{ item.evaluated.orgUnitName || 'Sin unidad' }}</td>
+                        <td>{{ item.orgUnitName || 'Sin unidad' }}</td>
                         <td>
                           <span [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
                         </td>
                         <td>{{ item.createdAt | date:'dd/MM/yyyy' }}</td>
-                        <td>
-                          <div class="actions-cell">
-                            <button
-                              type="button"
-                              class="button button--compact button--secondary"
-                              [disabled]="!isCycleEditable()"
-                              (click)="openEditModal(item)"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              class="button button--compact"
-                              [class.button--danger]="item.status === 'ACTIVE'"
-                              [class.button--primary]="item.status !== 'ACTIVE'"
-                              [disabled]="!isCycleEditable()"
-                              (click)="openStatusConfirm(item)"
-                            >
-                              {{ item.status === 'ACTIVE' ? 'Inactivar' : 'Activar' }}
-                            </button>
-                          </div>
-                        </td>
                       </tr>
                     }
                   </tbody>
                 </table>
               </div>
 
-              <div class="data-cards" aria-label="Relaciones del ciclo">
-                @for (item of filteredAssignments(); track item.id) {
+              <div class="data-cards" aria-label="Participantes del ciclo">
+                @for (item of filteredParticipants(); track item.participantId) {
                   <article class="data-card">
                     <div class="data-card__header">
                       <div>
-                        <span class="data-card__eyebrow">Evaluador</span>
-                        <strong>{{ item.evaluator.displayName }}</strong>
-                        <small>{{ item.evaluator.documentNumber }}</small>
+                        <span class="data-card__eyebrow">Participante</span>
+                        <strong>{{ item.displayName }}</strong>
+                        <small>{{ item.documentNumber }}</small>
                       </div>
-                      <span [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
+                      <span [class]="roleClass(item.role)">{{ roleLabel(item.role) }}</span>
                     </div>
                     <div class="data-card__row">
-                      <span class="data-card__eyebrow">Evaluado</span>
-                      <strong>{{ item.evaluated.displayName }}</strong>
-                      <small>{{ item.evaluated.documentNumber }} - {{ item.evaluated.orgUnitName || 'Sin unidad' }}</small>
+                      <span class="data-card__eyebrow">Unidad</span>
+                      <span>{{ item.orgUnitName || 'Sin unidad' }}</span>
+                    </div>
+                    <div class="data-card__row">
+                      <span class="data-card__eyebrow">Estado</span>
+                      <span [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
                     </div>
                     <div class="data-card__row">
                       <span class="data-card__eyebrow">Creada</span>
                       <span>{{ item.createdAt | date:'dd/MM/yyyy' }}</span>
-                    </div>
-                    <div class="data-card__actions">
-                      <button
-                        type="button"
-                        class="button button--secondary"
-                        [disabled]="!isCycleEditable()"
-                        (click)="openEditModal(item)"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        class="button"
-                        [class.button--danger]="item.status === 'ACTIVE'"
-                        [class.button--primary]="item.status !== 'ACTIVE'"
-                        [disabled]="!isCycleEditable()"
-                        (click)="openStatusConfirm(item)"
-                      >
-                        {{ item.status === 'ACTIVE' ? 'Inactivar' : 'Activar' }}
-                      </button>
                     </div>
                   </article>
                 }
               </div>
             }
           </section>
+        }
         } @else {
           <section class="panel">
             <div class="panel__header">
               <div>
-                <p class="panel__eyebrow">Resumen por persona</p>
-                <h2 class="panel__title">Actor funcional resultante</h2>
+                <p class="panel__eyebrow">Relaciones generadas</p>
+                <h2 class="panel__title">Auditoría de asignaciones evaluador–evaluado</h2>
                 <p class="panel__desc">
-                  Conteo de participacion por persona. El actor funcional se calcula automaticamente.
+                  Relaciones autogeneradas al registrar metas. Vista de solo lectura para RRHH.
                 </p>
               </div>
-              <label class="toggle">
-                <input
-                  type="checkbox"
-                  [checked]="showOnlyWithoutRole()"
-                  (change)="toggleOnlyWithoutRole()"
-                />
-                <span>Solo personas sin rol funcional</span>
-              </label>
+              <span class="panel__count">{{ generatedRelations().length }} relaciones</span>
             </div>
 
-            @if (filteredSummary().length === 0) {
+            @if (relationsLoading()) {
+              <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <span>Cargando relaciones...</span>
+              </div>
+            } @else if (generatedRelations().length === 0) {
               <div class="empty-state">
-                <strong>No hay personas elegibles para mostrar con los filtros actuales.</strong>
+                <strong>Aun no se han autogenerado relaciones en este ciclo.</strong>
+                <span>Las relaciones se crean automaticamente al registrar metas.</span>
               </div>
             } @else {
-              <div class="data-table" role="region" aria-label="Resumen por persona">
+              <div class="data-table" role="region" aria-label="Relaciones generadas">
                 <table>
                   <thead>
                     <tr>
-                      <th>Persona</th>
-                      <th>DNI</th>
-                      <th>Unidad</th>
-                      <th>Veces evaluador</th>
-                      <th>Veces evaluado</th>
-                      <th>Actor funcional</th>
+                      <th>Evaluador (responsable)</th>
+                      <th>Evaluado</th>
+                      <th>Segmento</th>
+                      <th>Estado</th>
+                      <th>Creada</th>
                     </tr>
                   </thead>
                   <tbody>
-                    @for (row of filteredSummary(); track row.personId) {
+                    @for (rel of generatedRelations(); track rel.id) {
                       <tr>
-                        <td><strong>{{ row.displayName }}</strong></td>
-                        <td>{{ row.documentNumber }}</td>
-                        <td>{{ row.orgUnitName || 'Sin unidad' }}</td>
-                        <td>{{ row.asEvaluatorCount }}</td>
-                        <td>{{ row.asEvaluatedCount }}</td>
                         <td>
-                          <span [class]="actorClass(row.resolvedFunctionalActor)">
-                            {{ actorLabel(row.resolvedFunctionalActor) }}
-                          </span>
+                          <div class="person-cell">
+                            <strong>{{ rel.evaluator.displayName }}</strong>
+                            <small>{{ rel.evaluator.documentNumber }}</small>
+                          </div>
                         </td>
+                        <td>
+                          <div class="person-cell">
+                            <strong>{{ rel.evaluated.displayName }}</strong>
+                            <small>{{ rel.evaluated.documentNumber }}</small>
+                          </div>
+                        </td>
+                        <td>{{ rel.segmentName || 'Sin segmento' }}</td>
+                        <td>
+                          <span [class]="statusClass(rel.status)">{{ statusLabel(rel.status) }}</span>
+                        </td>
+                        <td>{{ rel.createdAt | date:'dd/MM/yyyy' }}</td>
                       </tr>
                     }
                   </tbody>
                 </table>
               </div>
 
-              <div class="data-cards" aria-label="Resumen por persona">
-                @for (row of filteredSummary(); track row.personId) {
+              <div class="data-cards" aria-label="Relaciones generadas">
+                @for (rel of generatedRelations(); track rel.id) {
                   <article class="data-card">
                     <div class="data-card__header">
                       <div>
-                        <span class="data-card__eyebrow">Persona</span>
-                        <strong>{{ row.displayName }}</strong>
-                        <small>{{ row.documentNumber }}</small>
+                        <span class="data-card__eyebrow">Evaluador</span>
+                        <strong>{{ rel.evaluator.displayName }}</strong>
+                        <small>{{ rel.evaluator.documentNumber }}</small>
                       </div>
-                      <span [class]="actorClass(row.resolvedFunctionalActor)">
-                        {{ actorLabel(row.resolvedFunctionalActor) }}
-                      </span>
+                      <span [class]="statusClass(rel.status)">{{ statusLabel(rel.status) }}</span>
                     </div>
-                    <div class="data-card__grid">
-                      <div>
-                        <span class="data-card__eyebrow">Unidad</span>
-                        <span>{{ row.orgUnitName || 'Sin unidad' }}</span>
-                      </div>
-                      <div>
-                        <span class="data-card__eyebrow">Como evaluador</span>
-                        <span>{{ row.asEvaluatorCount }}</span>
-                      </div>
-                      <div>
-                        <span class="data-card__eyebrow">Como evaluado</span>
-                        <span>{{ row.asEvaluatedCount }}</span>
-                      </div>
+                    <div class="data-card__row">
+                      <span class="data-card__eyebrow">Evaluado</span>
+                      <strong>{{ rel.evaluated.displayName }}</strong>
+                      <small>{{ rel.evaluated.documentNumber }}</small>
+                    </div>
+                    <div class="data-card__row">
+                      <span class="data-card__eyebrow">Segmento</span>
+                      <span>{{ rel.segmentName || 'Sin segmento' }}</span>
+                    </div>
+                    <div class="data-card__row">
+                      <span class="data-card__eyebrow">Creada</span>
+                      <span>{{ rel.createdAt | date:'dd/MM/yyyy' }}</span>
                     </div>
                   </article>
                 }
@@ -405,15 +355,13 @@ type PersonRole = 'evaluator' | 'evaluated';
           </section>
         }
 
-        @if (assignmentModalMode(); as mode) {
+        @if (modalOpen()) {
           <div class="modal-backdrop" role="presentation">
             <section class="modal" role="dialog" aria-modal="true" aria-labelledby="assignment-modal-title">
               <div class="modal__header">
                 <div>
-                  <p class="modal__eyebrow">Relacion GDR</p>
-                  <h2 id="assignment-modal-title">
-                    {{ mode === 'create' ? 'Nueva relacion' : 'Editar relacion' }}
-                  </h2>
+                  <p class="modal__eyebrow">Asignacion de Rol GDR</p>
+                  <h2 id="assignment-modal-title">Asignar Rol GDR</h2>
                 </div>
                 <button
                   class="modal__close"
@@ -441,40 +389,40 @@ type PersonRole = 'evaluator' | 'evaluated';
                 </p>
 
                 <div class="form-field">
-                  <label for="evaluator-search"><span>Persona evaluadora</span></label>
-                  @if (selectedEvaluator()) {
+                  <label for="person-search"><span>Buscar persona (DNI o nombre)</span></label>
+                  @if (selectedPerson()) {
                     <div class="selected-person">
                       <div>
-                        <strong>{{ selectedEvaluator()!.displayName }}</strong>
-                        <small>{{ selectedEvaluator()!.documentNumber }} - {{ selectedEvaluator()!.orgUnitName || 'Sin unidad' }}</small>
+                        <strong>{{ selectedPerson()!.displayName }}</strong>
+                        <small>{{ selectedPerson()!.documentNumber }} - {{ selectedPerson()!.orgUnitName || 'Sin unidad' }}</small>
                       </div>
                       <button
                         type="button"
                         class="button button--compact button--secondary"
                         [disabled]="submitting()"
-                        (click)="clearSelectedPerson('evaluator')"
+                        (click)="clearSelectedPerson()"
                       >
                         Cambiar
                       </button>
                     </div>
                   } @else {
                     <input
-                      id="evaluator-search"
+                      id="person-search"
                       type="search"
                       maxlength="120"
                       placeholder="Buscar por nombre, DNI o unidad..."
-                      [value]="evaluatorQuery()"
+                      [value]="personQuery()"
                       [disabled]="submitting()"
-                      (input)="onPersonSearchInput('evaluator', eventValue($event))"
+                      (input)="onPersonSearchInput(eventValue($event))"
                     />
-                    @if (evaluatorResults().length > 0) {
+                    @if (personResults().length > 0) {
                       <ul class="suggest-list">
-                        @for (option of evaluatorResults(); track option.personId) {
+                        @for (option of personResults(); track option.personId) {
                           <li>
                             <button
                               type="button"
                               [disabled]="submitting()"
-                              (click)="selectPerson('evaluator', option)"
+                              (click)="selectPerson(option)"
                             >
                               <strong>{{ option.displayName }}</strong>
                               <small>{{ option.documentNumber }} - {{ option.orgUnitName || 'Sin unidad' }}</small>
@@ -482,63 +430,43 @@ type PersonRole = 'evaluator' | 'evaluated';
                           </li>
                         }
                       </ul>
-                    } @else if (evaluatorSearched()) {
+                    } @else if (personSearched()) {
                       <small class="suggest-empty">No se encontraron personas elegibles.</small>
                     }
                   }
                 </div>
 
-                <div class="form-field">
-                  <label for="evaluated-search"><span>Persona evaluada</span></label>
-                  @if (selectedEvaluated()) {
-                    <div class="selected-person">
-                      <div>
-                        <strong>{{ selectedEvaluated()!.displayName }}</strong>
-                        <small>{{ selectedEvaluated()!.documentNumber }} - {{ selectedEvaluated()!.orgUnitName || 'Sin unidad' }}</small>
-                      </div>
-                      <button
-                        type="button"
-                        class="button button--compact button--secondary"
-                        [disabled]="submitting()"
-                        (click)="clearSelectedPerson('evaluated')"
-                      >
-                        Cambiar
-                      </button>
+                @if (selectedPerson()) {
+                  <div class="form-field">
+                    <label><span>Rol a asignar en el ciclo</span></label>
+                    <div style="display: flex; gap: 20px; margin-top: 4px;">
+                      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                        <input
+                          type="radio"
+                          name="role"
+                          [checked]="selectedRole() === 'EVALUADOR'"
+                          [disabled]="submitting()"
+                          (change)="selectedRole.set('EVALUADOR')"
+                        />
+                        Evaluador
+                      </label>
+                      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                        <input
+                          type="radio"
+                          name="role"
+                          [checked]="selectedRole() === 'EVALUADO'"
+                          [disabled]="submitting()"
+                          (change)="selectedRole.set('EVALUADO')"
+                        />
+                        Evaluado
+                      </label>
                     </div>
-                  } @else {
-                    <input
-                      id="evaluated-search"
-                      type="search"
-                      maxlength="120"
-                      placeholder="Buscar por nombre, DNI o unidad..."
-                      [value]="evaluatedQuery()"
-                      [disabled]="submitting()"
-                      (input)="onPersonSearchInput('evaluated', eventValue($event))"
-                    />
-                    @if (evaluatedResults().length > 0) {
-                      <ul class="suggest-list">
-                        @for (option of evaluatedResults(); track option.personId) {
-                          <li>
-                            <button
-                              type="button"
-                              [disabled]="submitting()"
-                              (click)="selectPerson('evaluated', option)"
-                            >
-                              <strong>{{ option.displayName }}</strong>
-                              <small>{{ option.documentNumber }} - {{ option.orgUnitName || 'Sin unidad' }}</small>
-                            </button>
-                          </li>
-                        }
-                      </ul>
-                    } @else if (evaluatedSearched()) {
-                      <small class="suggest-empty">No se encontraron personas elegibles.</small>
-                    }
-                  }
-                </div>
+                  </div>
+                }
 
                 <p class="modal__help">
-                  El evaluador y el evaluado no pueden ser la misma persona. Solo aparecen personas
-                  con usuario activo y rol GDR_USUARIO.
+                  Si la persona ya tiene el otro rol en el ciclo, el sistema la marcara como Mixto
+                  automaticamente. Solo aparecen personas con usuario activo y rol GDR_USUARIO.
                 </p>
 
                 <div class="modal__actions">
@@ -546,60 +474,10 @@ type PersonRole = 'evaluator' | 'evaluated';
                     Cancelar
                   </button>
                   <button class="button button--primary" type="submit" [disabled]="!canSubmitAssignment()">
-                    {{ submitting() ? 'Guardando...' : 'Guardar' }}
+                    {{ submitting() ? 'Guardando...' : 'Guardar Rol' }}
                   </button>
                 </div>
               </form>
-            </section>
-          </div>
-        }
-
-        @if (statusToggleTarget(); as target) {
-          <div class="modal-backdrop" role="presentation">
-            <section class="modal modal--small" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
-              <div class="modal__header">
-                <div>
-                  <p class="modal__eyebrow">Estado de la relacion</p>
-                  <h2 id="status-modal-title">
-                    {{ target.nextStatus === 'ACTIVE' ? 'Activar relacion' : 'Inactivar relacion' }}
-                  </h2>
-                </div>
-                <button
-                  class="modal__close"
-                  type="button"
-                  aria-label="Cerrar"
-                  [disabled]="submitting()"
-                  (click)="closeStatusConfirm()"
-                >
-                  x
-                </button>
-              </div>
-
-              @if (modalError()) {
-                <div class="alert alert--error modal__alert" role="alert">
-                  <svg class="alert__icon" viewBox="0 0 20 20" aria-hidden="true">
-                    <path d="M10 2.2a7.8 7.8 0 1 0 0 15.6 7.8 7.8 0 0 0 0-15.6Zm0 11.4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm1-1.8H9V6.2h2v5.6Z"/>
-                  </svg>
-                  <span>{{ modalError() }}</span>
-                </div>
-              }
-
-              <div class="modal__body">
-                <p>
-                  Se cambiara el estado de la relacion
-                  <strong>{{ target.assignment.evaluator.displayName }} a {{ target.assignment.evaluated.displayName }}</strong>
-                  a <strong>{{ statusLabel(target.nextStatus) }}</strong>.
-                </p>
-              </div>
-
-              <div class="modal__actions modal__actions--padded">
-                <button class="button button--secondary" type="button" [disabled]="submitting()" (click)="closeStatusConfirm()">
-                  Cancelar
-                </button>
-                <button class="button button--primary" type="button" [disabled]="submitting()" (click)="confirmStatusToggle()">
-                  {{ submitting() ? 'Actualizando...' : 'Confirmar' }}
-                </button>
-              </div>
             </section>
           </div>
         }
@@ -1324,14 +1202,14 @@ type PersonRole = 'evaluator' | 'evaluated';
 })
 export class ParticipacionGdrComponent {
   private readonly assignmentsService = inject(AssignmentsService);
+  private readonly participantsService = inject(ParticipantsService);
   private readonly cyclesService = inject(CyclesService);
   private readonly route = inject(ActivatedRoute);
   readonly cicloNavService = inject(CicloNavService);
 
   protected readonly cycles = signal<CycleOptionResponse[]>([]);
   protected readonly selectedCycleId = signal<number | null>(null);
-  protected readonly assignments = signal<AssignmentListItemResponse[]>([]);
-  protected readonly summary = signal<AssignmentSummaryByPersonResponse[]>([]);
+  protected readonly participants = signal<ParticipantListItemResponse[]>([]);
 
   protected readonly loading = signal(true);
   protected readonly errorMessage = signal<string | null>(null);
@@ -1340,23 +1218,20 @@ export class ParticipacionGdrComponent {
   protected readonly submitting = signal(false);
 
   protected readonly searchQuery = signal('');
-  protected readonly statusFilter = signal<AssignmentStatusFilter>('ACTIVE');
-  protected readonly activeTab = signal<TabKey>('relations');
+  protected readonly statusFilter = signal<ParticipantStatusFilter>('ACTIVE');
   protected readonly showHelpBanner = signal(true);
-  protected readonly showOnlyWithoutRole = signal(false);
 
-  protected readonly assignmentModalMode = signal<AssignmentModalMode | null>(null);
-  protected readonly editingAssignmentId = signal<number | null>(null);
-  protected readonly selectedEvaluator = signal<AssignmentPersonOptionResponse | null>(null);
-  protected readonly selectedEvaluated = signal<AssignmentPersonOptionResponse | null>(null);
-  protected readonly evaluatorQuery = signal('');
-  protected readonly evaluatedQuery = signal('');
-  protected readonly evaluatorResults = signal<AssignmentPersonOptionResponse[]>([]);
-  protected readonly evaluatedResults = signal<AssignmentPersonOptionResponse[]>([]);
-  protected readonly evaluatorSearched = signal(false);
-  protected readonly evaluatedSearched = signal(false);
+  protected readonly currentTab = signal<TabKey>('participants');
+  protected readonly generatedRelations = signal<AssignmentListItemResponse[]>([]);
+  protected readonly relationsLoading = signal(false);
+  private relationsLoadedForCycle: number | null = null;
 
-  protected readonly statusToggleTarget = signal<StatusToggleTarget | null>(null);
+  protected readonly modalOpen = signal(false);
+  protected readonly personQuery = signal('');
+  protected readonly personResults = signal<AssignmentPersonOptionResponse[]>([]);
+  protected readonly personSearched = signal(false);
+  protected readonly selectedPerson = signal<AssignmentPersonOptionResponse | null>(null);
+  protected readonly selectedRole = signal<ParticipantRole | null>(null);
 
   protected readonly selectedCycle = computed<CycleOptionResponse | null>(() => {
     const id = this.selectedCycleId();
@@ -1371,20 +1246,26 @@ export class ParticipacionGdrComponent {
     return cycle !== null && cycle.status === 'ACTIVE';
   });
 
-  protected readonly canCreateRelation = computed<boolean>(
+  protected readonly canAssignRole = computed<boolean>(
     () => this.isCycleEditable() && !this.loading() && !this.submitting()
   );
 
-  protected readonly filteredAssignments = computed<AssignmentListItemResponse[]>(() => {
-    return this.assignments();
-  });
-
-  protected readonly filteredSummary = computed<AssignmentSummaryByPersonResponse[]>(() => {
-    const data = this.summary();
-    if (!this.showOnlyWithoutRole()) {
-      return data;
-    }
-    return data.filter((row) => row.resolvedFunctionalActor === 'SIN_ROL_FUNCIONAL_GDR');
+  protected readonly filteredParticipants = computed<ParticipantListItemResponse[]>(() => {
+    const status = this.statusFilter();
+    const term = this.searchQuery().trim().toLowerCase();
+    return this.participants().filter((item) => {
+      if (status !== 'ALL' && item.status !== status) {
+        return false;
+      }
+      if (term.length === 0) {
+        return true;
+      }
+      return (
+        item.displayName.toLowerCase().includes(term) ||
+        item.documentNumber.toLowerCase().includes(term) ||
+        (item.orgUnitName ?? '').toLowerCase().includes(term)
+      );
+    });
   });
 
   constructor() {
@@ -1399,36 +1280,36 @@ export class ParticipacionGdrComponent {
     return (event.target as HTMLInputElement | HTMLSelectElement).value;
   }
 
-  protected statusLabel(status: AssignmentStatus | string): string {
-    return status === 'ACTIVE' ? 'Activa' : 'Inactiva';
+  protected statusLabel(status: string): string {
+    return status === 'ACTIVE' ? 'Activo' : 'Inactivo';
   }
 
-  protected statusClass(status: AssignmentStatus | string): string {
+  protected statusClass(status: string): string {
     return status === 'ACTIVE'
       ? 'status-badge status-badge--active'
       : 'status-badge status-badge--inactive';
   }
 
-  protected actorLabel(actor: ResolvedFunctionalActor): string {
-    switch (actor) {
+  protected roleLabel(role: string): string {
+    switch (role) {
       case 'EVALUADOR':
         return 'Evaluador';
       case 'EVALUADO':
         return 'Evaluado';
-      case 'EVALUADOR_Y_EVALUADO':
+      case 'MIXTO':
         return 'Mixto';
       default:
-        return 'Sin rol';
+        return role;
     }
   }
 
-  protected actorClass(actor: ResolvedFunctionalActor): string {
-    switch (actor) {
+  protected roleClass(role: string): string {
+    switch (role) {
       case 'EVALUADOR':
         return 'actor-badge actor-badge--evaluador';
       case 'EVALUADO':
         return 'actor-badge actor-badge--evaluado';
-      case 'EVALUADOR_Y_EVALUADO':
+      case 'MIXTO':
         return 'actor-badge actor-badge--mixto';
       default:
         return 'actor-badge actor-badge--sin-rol';
@@ -1447,264 +1328,144 @@ export class ParticipacionGdrComponent {
   }
 
   protected onStatusFilterChange(value: string): void {
-    const filter = (value as AssignmentStatusFilter) ?? 'ACTIVE';
-    this.statusFilter.set(filter);
-    this.reloadAssignments();
+    this.statusFilter.set((value as ParticipantStatusFilter) ?? 'ACTIVE');
+  }
+
+  protected switchTab(tab: TabKey): void {
+    this.currentTab.set(tab);
+    if (tab === 'generated_relations') {
+      this.loadGeneratedRelations();
+    }
+  }
+
+  private loadGeneratedRelations(): void {
+    const cycleId = this.selectedCycleId();
+    if (cycleId === null || this.relationsLoadedForCycle === cycleId) {
+      return;
+    }
+    this.relationsLoading.set(true);
+    this.assignmentsService
+      .list(cycleId)
+      .pipe(
+        finalize(() => {
+          if (this.selectedCycleId() === cycleId) {
+            this.relationsLoading.set(false);
+          }
+        })
+      )
+      .subscribe({
+        next: (relations) => {
+          if (this.selectedCycleId() !== cycleId) {
+            return;
+          }
+          this.generatedRelations.set(relations);
+          this.relationsLoadedForCycle = cycleId;
+        },
+        error: (error) => {
+          if (this.selectedCycleId() !== cycleId) {
+            return;
+          }
+          this.errorMessage.set(this.resolveErrorMessage(error, 'No se pudo cargar las relaciones generadas.'));
+        }
+      });
   }
 
   protected onSearchChange(value: string): void {
     this.searchQuery.set(value);
-    this.reloadAssignments();
-  }
-
-  protected onTabChange(tab: TabKey): void {
-    this.activeTab.set(tab);
-    this.errorMessage.set(null);
-  }
-
-  protected toggleOnlyWithoutRole(): void {
-    this.showOnlyWithoutRole.set(!this.showOnlyWithoutRole());
   }
 
   protected dismissHelpBanner(): void {
     this.showHelpBanner.set(false);
   }
 
-  protected openCreateModal(): void {
-    if (!this.canCreateRelation()) {
+  protected openAssignModal(): void {
+    if (!this.canAssignRole()) {
       return;
     }
     this.successMessage.set(null);
     this.modalError.set(null);
-    this.assignmentModalMode.set('create');
-    this.editingAssignmentId.set(null);
-    this.selectedEvaluator.set(null);
-    this.selectedEvaluated.set(null);
-    this.evaluatorQuery.set('');
-    this.evaluatedQuery.set('');
-    this.evaluatorResults.set([]);
-    this.evaluatedResults.set([]);
-    this.evaluatorSearched.set(false);
-    this.evaluatedSearched.set(false);
-  }
-
-  protected openEditModal(item: AssignmentListItemResponse): void {
-    if (!this.isCycleEditable()) {
-      return;
-    }
-    this.successMessage.set(null);
-    this.modalError.set(null);
-    this.assignmentModalMode.set('edit');
-    this.editingAssignmentId.set(item.id);
-    this.selectedEvaluator.set({
-      personId: item.evaluator.personId,
-      documentNumber: item.evaluator.documentNumber,
-      displayName: item.evaluator.displayName,
-      orgUnitId: item.evaluator.orgUnitId,
-      orgUnitCode: item.evaluator.orgUnitCode,
-      orgUnitName: item.evaluator.orgUnitName
-    });
-    this.selectedEvaluated.set({
-      personId: item.evaluated.personId,
-      documentNumber: item.evaluated.documentNumber,
-      displayName: item.evaluated.displayName,
-      orgUnitId: item.evaluated.orgUnitId,
-      orgUnitCode: item.evaluated.orgUnitCode,
-      orgUnitName: item.evaluated.orgUnitName
-    });
-    this.evaluatorQuery.set('');
-    this.evaluatedQuery.set('');
-    this.evaluatorResults.set([]);
-    this.evaluatedResults.set([]);
-    this.evaluatorSearched.set(false);
-    this.evaluatedSearched.set(false);
+    this.selectedPerson.set(null);
+    this.selectedRole.set(null);
+    this.personQuery.set('');
+    this.personResults.set([]);
+    this.personSearched.set(false);
+    this.modalOpen.set(true);
   }
 
   protected closeModal(): void {
     if (this.submitting()) {
       return;
     }
-    this.assignmentModalMode.set(null);
-    this.editingAssignmentId.set(null);
+    this.modalOpen.set(false);
     this.modalError.set(null);
   }
 
-  protected clearSelectedPerson(role: PersonRole): void {
-    if (role === 'evaluator') {
-      this.selectedEvaluator.set(null);
-      this.evaluatorQuery.set('');
-      this.evaluatorResults.set([]);
-      this.evaluatorSearched.set(false);
-    } else {
-      this.selectedEvaluated.set(null);
-      this.evaluatedQuery.set('');
-      this.evaluatedResults.set([]);
-      this.evaluatedSearched.set(false);
-    }
+  protected clearSelectedPerson(): void {
+    this.selectedPerson.set(null);
+    this.selectedRole.set(null);
+    this.personQuery.set('');
+    this.personResults.set([]);
+    this.personSearched.set(false);
   }
 
-  protected onPersonSearchInput(role: PersonRole, value: string): void {
-    if (role === 'evaluator') {
-      this.evaluatorQuery.set(value);
-    } else {
-      this.evaluatedQuery.set(value);
-    }
+  protected onPersonSearchInput(value: string): void {
+    this.personQuery.set(value);
     if (value.trim().length < 2) {
-      if (role === 'evaluator') {
-        this.evaluatorResults.set([]);
-        this.evaluatorSearched.set(false);
-      } else {
-        this.evaluatedResults.set([]);
-        this.evaluatedSearched.set(false);
-      }
+      this.personResults.set([]);
+      this.personSearched.set(false);
       return;
     }
     this.assignmentsService.searchPersons(value).subscribe({
       next: (results) => {
-        if (role === 'evaluator') {
-          this.evaluatorResults.set(results);
-          this.evaluatorSearched.set(true);
-        } else {
-          this.evaluatedResults.set(results);
-          this.evaluatedSearched.set(true);
-        }
+        this.personResults.set(results);
+        this.personSearched.set(true);
       },
       error: (error) => this.modalError.set(this.resolveErrorMessage(error, 'No se pudo consultar personas elegibles.'))
     });
   }
 
-  protected selectPerson(role: PersonRole, option: AssignmentPersonOptionResponse): void {
-    if (role === 'evaluator') {
-      this.selectedEvaluator.set(option);
-      this.evaluatorResults.set([]);
-      this.evaluatorQuery.set('');
-      this.evaluatorSearched.set(false);
-    } else {
-      this.selectedEvaluated.set(option);
-      this.evaluatedResults.set([]);
-      this.evaluatedQuery.set('');
-      this.evaluatedSearched.set(false);
-    }
+  protected selectPerson(option: AssignmentPersonOptionResponse): void {
+    this.selectedPerson.set(option);
+    this.personResults.set([]);
+    this.personQuery.set('');
+    this.personSearched.set(false);
     this.modalError.set(null);
   }
 
   protected canSubmitAssignment(): boolean {
-    if (this.submitting()) {
-      return false;
-    }
-    const evaluator = this.selectedEvaluator();
-    const evaluated = this.selectedEvaluated();
-    if (!evaluator || !evaluated) {
-      return false;
-    }
-    if (evaluator.personId === evaluated.personId) {
-      return false;
-    }
-    return this.selectedCycleId() !== null;
+    return (
+      !this.submitting() &&
+      this.selectedPerson() !== null &&
+      this.selectedRole() !== null &&
+      this.selectedCycleId() !== null
+    );
   }
 
   protected submitAssignment(event: Event): void {
     event.preventDefault();
     if (!this.canSubmitAssignment()) {
-      this.modalError.set('Seleccione un evaluador y un evaluado distintos.');
       return;
     }
-    const mode = this.assignmentModalMode();
-    if (!mode) {
-      return;
-    }
-    const evaluator = this.selectedEvaluator()!;
-    const evaluated = this.selectedEvaluated()!;
     const cycleId = this.selectedCycleId()!;
+    const person = this.selectedPerson()!;
+    const role = this.selectedRole()!;
 
     this.submitting.set(true);
     this.modalError.set(null);
     this.successMessage.set(null);
 
-    if (mode === 'create') {
-      const payload: CreateAssignmentRequest = {
-        cycleId,
-        evaluatorPersonId: evaluator.personId,
-        evaluatedPersonId: evaluated.personId
-      };
-      this.assignmentsService
-        .create(payload)
-        .pipe(finalize(() => this.submitting.set(false)))
-        .subscribe({
-          next: (created) => this.applyMutationResult(
-            created,
-            'Relacion creada correctamente. El contexto GDR del ciclo fue asegurado para ambos usuarios vinculados.'
-          ),
-          error: (error) => this.modalError.set(this.resolveErrorMessage(error, 'No se pudo crear la relacion.'))
-        });
-      return;
-    }
-
-    const id = this.editingAssignmentId();
-    if (id === null) {
-      this.submitting.set(false);
-      this.modalError.set('No se pudo identificar la relacion a editar.');
-      return;
-    }
-
-    const payload: UpdateAssignmentRequest = {
-      evaluatorPersonId: evaluator.personId,
-      evaluatedPersonId: evaluated.personId
-    };
-    this.assignmentsService
-      .update(id, payload)
+    this.participantsService
+      .assignRole({ cycleId, personId: person.personId, role })
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
-        next: (updated) => this.applyMutationResult(
-          updated,
-          'Relacion actualizada correctamente. El contexto GDR del ciclo fue asegurado para ambos usuarios vinculados.'
-        ),
-        error: (error) => this.modalError.set(this.resolveErrorMessage(error, 'No se pudo actualizar la relacion.'))
-      });
-  }
-
-  protected openStatusConfirm(assignment: AssignmentListItemResponse): void {
-    if (!this.isCycleEditable()) {
-      return;
-    }
-    this.successMessage.set(null);
-    this.modalError.set(null);
-    this.statusToggleTarget.set({
-      assignment,
-      nextStatus: assignment.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
-    });
-  }
-
-  protected closeStatusConfirm(): void {
-    if (this.submitting()) {
-      return;
-    }
-    this.statusToggleTarget.set(null);
-    this.modalError.set(null);
-  }
-
-  protected confirmStatusToggle(): void {
-    const target = this.statusToggleTarget();
-    if (!target) {
-      return;
-    }
-    this.submitting.set(true);
-    this.modalError.set(null);
-    this.successMessage.set(null);
-    this.assignmentsService
-      .updateStatus(target.assignment.id, { status: target.nextStatus })
-      .pipe(finalize(() => this.submitting.set(false)))
-      .subscribe({
-        next: (updated) => {
-          this.statusToggleTarget.set(null);
-          this.applyMutationResult(
-            updated,
-            updated.status === 'ACTIVE'
-              ? 'Relacion activada correctamente. El contexto GDR del ciclo fue asegurado para ambos usuarios vinculados.'
-              : 'Estado de la relacion actualizado correctamente.'
-          );
+        next: () => {
+          this.modalOpen.set(false);
+          this.selectedPerson.set(null);
+          this.selectedRole.set(null);
+          this.successMessage.set('Rol asignado correctamente al participante del ciclo.');
+          this.refreshCycleData();
         },
-        error: (error) => this.modalError.set(this.resolveErrorMessage(error, 'No se pudo actualizar el estado.'))
+        error: (error) => this.modalError.set(this.resolveErrorMessage(error, 'No se pudo asignar el rol.'))
       });
   }
 
@@ -1734,43 +1495,19 @@ export class ParticipacionGdrComponent {
     if (cycleId === null) {
       return;
     }
+    this.relationsLoadedForCycle = null;
+    this.generatedRelations.set([]);
     this.loading.set(true);
-    forkJoin({
-      assignments: this.assignmentsService.list(cycleId, this.searchQuery(), this.statusFilter()),
-      summary: this.assignmentsService.summary(cycleId)
-    })
+    this.participantsService
+      .listParticipants(cycleId)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: ({ assignments, summary }) => {
-          this.assignments.set(assignments);
-          this.summary.set(summary);
-        },
-        error: (error) => this.errorMessage.set(this.resolveErrorMessage(error, 'No se pudo cargar la informacion del ciclo.'))
+        next: (participants) => this.participants.set(participants),
+        error: (error) => this.errorMessage.set(this.resolveErrorMessage(error, 'No se pudo cargar los participantes del ciclo.'))
       });
-  }
-
-  private reloadAssignments(): void {
-    const cycleId = this.selectedCycleId();
-    if (cycleId === null) {
-      return;
+    if (this.currentTab() === 'generated_relations') {
+      this.loadGeneratedRelations();
     }
-    this.loading.set(true);
-    this.assignmentsService
-      .list(cycleId, this.searchQuery(), this.statusFilter())
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: (assignments) => this.assignments.set(assignments),
-        error: (error) => this.errorMessage.set(this.resolveErrorMessage(error, 'No se pudo cargar las relaciones.'))
-      });
-  }
-
-  private applyMutationResult(detail: AssignmentDetailResponse, successMessage: string): void {
-    this.assignmentModalMode.set(null);
-    this.editingAssignmentId.set(null);
-    this.selectedEvaluator.set(null);
-    this.selectedEvaluated.set(null);
-    this.successMessage.set(successMessage);
-    this.refreshCycleData();
   }
 
   private resolveErrorMessage(error: unknown, fallback: string): string {

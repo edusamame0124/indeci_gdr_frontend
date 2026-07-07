@@ -117,12 +117,19 @@ export class GdrCicloBoardComponent {
     !!this.estadoEtapa() && this.estadoEtapa() !== 'BORRADOR'
   );
 
+  /** True si el usuario solo posee el rol base GDR_USUARIO (sin roles institucionales como ORH/ADMIN). */
+  readonly esSoloGdrUsuario = computed(() => {
+    const roles = this.authService.roles();
+    return roles.length > 0 && roles.every((role) => role === 'GDR_USUARIO');
+  });
+
   /** Mostrar bloque cumplimiento en EN_PLANIFICACION y también colapsado en etapas posteriores */
   readonly showCumplimientoBlock = computed(() => {
     const etapa = this.estadoEtapa();
     const actor = this.actorEfectivo();
     return ['EN_PLANIFICACION', 'EN_SEGUIMIENTO', 'EN_EVALUACION'].includes(etapa)
-      && actor !== 'EVALUADO';
+      && actor !== 'EVALUADO'
+      && !this.esSoloGdrUsuario();
   });
 
   /** ORH funcional puede avanzar a Seguimiento */
