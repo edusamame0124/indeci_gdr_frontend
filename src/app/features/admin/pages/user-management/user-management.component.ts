@@ -141,6 +141,9 @@ type StatusTarget = { user: UserListItemResponse; nextStatus: 'ACTIVE' | 'INACTI
                           @if (user.functionalActor && user.functionalActor !== 'SIN_ROL_FUNCIONAL_GDR') {
                             <small>{{ functionalActorLabel(user.functionalActor) }}</small>
                           }
+                          @if (user.gdrParticipationStatus === 'NO_APLICA') {
+                            <small class="gdr-state__hint">Falta el rol tecnico GDR_USUARIO</small>
+                          }
                         </div>
                       </td>
                       <td>
@@ -214,6 +217,9 @@ type StatusTarget = { user: UserListItemResponse; nextStatus: 'ACTIVE' | 'INACTI
                         <span [class]="gdrParticipationClass(user.gdrParticipationStatus)">
                           {{ user.gdrParticipationLabel }}
                         </span>
+                        @if (user.gdrParticipationStatus === 'NO_APLICA') {
+                          <small class="gdr-state__hint">Falta el rol tecnico GDR_USUARIO</small>
+                        }
                       </dd>
                     </div>
                   </dl>
@@ -423,6 +429,11 @@ type StatusTarget = { user: UserListItemResponse; nextStatus: 'ACTIVE' | 'INACTI
 
                   <fieldset class="roles-field">
                     <legend>Roles tecnicos</legend>
+                    <small class="form-field__hint">
+                      El rol <strong>GDR_USUARIO</strong> es obligatorio para que esta persona pueda ser
+                      asignada como Evaluador, Evaluado o Mixto en Participacion GDR. Sin el, quedara
+                      registrada pero invisible para esa busqueda.
+                    </small>
                     <div class="roles-field__grid">
                       @for (role of roles(); track role.code) {
                         <label>
@@ -871,6 +882,10 @@ type StatusTarget = { user: UserListItemResponse; nextStatus: 'ACTIVE' | 'INACTI
       color: #64748b;
       font-size: 0.72rem;
       font-weight: 750;
+    }
+
+    small.gdr-state__hint {
+      color: #c2410c;
     }
 
     .gdr-badge {
@@ -1592,7 +1607,9 @@ export class UserManagementComponent {
     this.initialPassword.set('');
     this.documentNumber.set('');
     this.orgUnitIdText.set('');
-    this.selectedRoleCodes.set([]);
+    // GDR_USUARIO preseleccionado: es el rol base requerido para que la persona
+    // sea candidata a Evaluador/Evaluado/Mixto en Participacion GDR (ver 24.2 del manual).
+    this.selectedRoleCodes.set(['GDR_USUARIO']);
   }
 
   protected openEditModal(user: UserListItemResponse): void {

@@ -47,13 +47,19 @@ export interface AssignmentSummaryByPersonResponse {
   resolvedFunctionalActor: ResolvedFunctionalActor;
 }
 
+export type AssignmentPersonOrigin = 'LOCAL' | 'SISRH';
+
 export interface AssignmentPersonOptionResponse {
-  personId: number;
+  /** Nulo cuando la persona proviene de SISRH y aun no existe en GDR. */
+  personId: number | null;
   documentNumber: string;
   displayName: string;
   orgUnitId: number | null;
   orgUnitCode: string | null;
   orgUnitName: string | null;
+  /** Username institucional (SISRH); presente en origen SISRH. */
+  username: string | null;
+  origin: AssignmentPersonOrigin;
 }
 
 export interface CreateAssignmentRequest {

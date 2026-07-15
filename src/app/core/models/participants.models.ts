@@ -12,6 +12,12 @@ export interface ParticipantListItemResponse {
 
 export interface CreateParticipantRoleRequest {
   cycleId: number;
-  personId: number;
+  /** Persona ya aprovisionada en GDR. Nulo si la persona viene de SISRH. */
+  personId?: number | null;
   role: 'EVALUADOR' | 'EVALUADO';
+  /** Datos del directorio SISRH para aprovisionar al asignar (si personId es nulo). */
+  documentNumber?: string | null;
+  displayName?: string | null;
+  username?: string | null;
+  orgUnitCode?: string | null;
 }

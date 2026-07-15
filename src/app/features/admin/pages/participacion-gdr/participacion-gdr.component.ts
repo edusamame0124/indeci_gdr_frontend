@@ -2,13 +2,13 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { AssignmentListItemResponse, AssignmentPersonOptionResponse } from '../../../../core/admin/assignments.models';
+import { AssignmentListItemResponse, AssignmentPersonOptionResponse, AssignmentPersonOrigin } from '../../../../core/admin/assignments.models';
 import { AssignmentsService } from '../../../../core/admin/assignments.service';
 import { CycleOptionResponse } from '../../../../core/admin/cycles.models';
 import { CyclesService } from '../../../../core/admin/cycles.service';
 import { CicloNavService } from '../../../../core/gdr/ciclo-nav.service';
 import { ParticipantsService } from '../../../../core/services/participants.service';
-import { ParticipantListItemResponse } from '../../../../core/models/participants.models';
+import { CreateParticipantRoleRequest, ParticipantListItemResponse } from '../../../../core/models/participants.models';
 
 type ParticipantStatusFilter = 'ACTIVE' | 'INACTIVE' | 'ALL';
 type ParticipantRole = 'EVALUADOR' | 'EVALUADO';
@@ -417,21 +417,24 @@ type TabKey = 'participants' | 'generated_relations';
                     />
                     @if (personResults().length > 0) {
                       <ul class="suggest-list">
-                        @for (option of personResults(); track option.personId) {
+                        @for (option of personResults(); track option.documentNumber) {
                           <li>
                             <button
                               type="button"
                               [disabled]="submitting()"
                               (click)="selectPerson(option)"
                             >
-                              <strong>{{ option.displayName }}</strong>
+                              <span class="suggest-list__row">
+                                <strong>{{ option.displayName }}</strong>
+                                <span [class]="originClass(option.origin)">{{ originLabel(option.origin) }}</span>
+                              </span>
                               <small>{{ option.documentNumber }} - {{ option.orgUnitName || 'Sin unidad' }}</small>
                             </button>
                           </li>
                         }
                       </ul>
                     } @else if (personSearched()) {
-                      <small class="suggest-empty">No se encontraron personas elegibles.</small>
+                      <small class="suggest-empty">No se encontraron personas elegibles en GDR ni en SISRH.</small>
                     }
                   }
                 </div>
@@ -708,6 +711,15 @@ type TabKey = 'participants' | 'generated_relations';
     .suggest-list strong { color: #0f172a; font-size: 0.9rem; }
     .suggest-list small { color: #64748b; font-size: 0.78rem; }
     .suggest-empty { color: #64748b; font-size: 0.82rem; }
+    .suggest-list__row {
+      align-items: center; display: flex; gap: 8px; justify-content: space-between;
+    }
+    .origin-badge {
+      border-radius: 999px; flex: 0 0 auto; font-size: 0.66rem; font-weight: 800;
+      letter-spacing: 0.02em; padding: 2px 8px; text-transform: uppercase;
+    }
+    .origin-badge--local { background: #ecfdf5; color: #047857; }
+    .origin-badge--sisrh { background: #fff7ed; color: #c2410c; }
 
     .modal__actions { display: flex; gap: 10px; justify-content: flex-end; }
     .modal__actions--padded { border-top: 1px solid #e2e8f0; padding: 16px 20px 20px; }
@@ -1316,6 +1328,16 @@ export class ParticipacionGdrComponent {
     }
   }
 
+  protected originLabel(origin: AssignmentPersonOrigin): string {
+    return origin === 'SISRH' ? 'SISRH' : 'En GDR';
+  }
+
+  protected originClass(origin: AssignmentPersonOrigin): string {
+    return origin === 'SISRH'
+      ? 'origin-badge origin-badge--sisrh'
+      : 'origin-badge origin-badge--local';
+  }
+
   protected onCycleChange(value: string): void {
     const id = Number(value);
     if (!Number.isFinite(id) || id <= 0) {
@@ -1454,8 +1476,20 @@ export class ParticipacionGdrComponent {
     this.modalError.set(null);
     this.successMessage.set(null);
 
+    const request: CreateParticipantRoleRequest = person.origin === 'SISRH'
+      ? {
+          cycleId,
+          role,
+          personId: null,
+          documentNumber: person.documentNumber,
+          displayName: person.displayName,
+          username: person.username,
+          orgUnitCode: person.orgUnitCode
+        }
+      : { cycleId, role, personId: person.personId };
+
     this.participantsService
-      .assignRole({ cycleId, personId: person.personId, role })
+      .assignRole(request)
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
         next: () => {
