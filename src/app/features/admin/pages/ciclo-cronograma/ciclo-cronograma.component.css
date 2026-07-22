@@ -265,6 +265,11 @@
   line-height: 1.4;
 }
 
+.cronograma-summary__advance-hint--error {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 /* ALERT */
 
 .cronograma-alert {

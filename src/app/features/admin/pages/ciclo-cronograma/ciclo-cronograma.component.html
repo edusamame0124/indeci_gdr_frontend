@@ -128,9 +128,17 @@
             >
               {{ avanzando() ? 'Avanzando...' : avanzarEtapaLabel() + ' →' }}
             </button>
-            @if (!puedeAvanzarEtapa()) {
+            @if (avanceChecklistError()) {
+              <p class="cronograma-summary__advance-hint cronograma-summary__advance-hint--error">
+                {{ avanceChecklistError() }}
+              </p>
+            } @else if (!puedeAvanzarEtapa() && etapasConfiguradas() !== etapasTotal) {
               <p class="cronograma-summary__advance-hint">
                 Configure todas las fechas obligatorias para habilitar esta acción.
+              </p>
+            } @else if (!puedeAvanzarEtapa() && !avanceChecklistLoading()) {
+              <p class="cronograma-summary__advance-hint">
+                Revise los requisitos de avance abajo.
               </p>
             }
           </div>

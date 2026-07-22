@@ -93,6 +93,7 @@ export class CicloCronogramaComponent {
   readonly previewOpen = signal(false);
   readonly avanceChecklist = signal<CronogramaAvanceChecklistResult | null>(null);
   readonly avanceChecklistLoading = signal(false);
+  readonly avanceChecklistError = signal<string | null>(null);
   readonly avanceRechazoServidor = signal<string | null>(null);
 
   readonly canEdit = computed(() => this.authService.featureAccess()?.canEditCronograma ?? false);
@@ -181,6 +182,7 @@ export class CicloCronogramaComponent {
 
   private refreshAvanceChecklist(cycleId: number): void {
     const ciclo = this.ciclo();
+    this.avanceChecklistError.set(null);
     if (!ciclo || !this.canEdit() || ciclo.transicionesDisponibles.length === 0) {
       this.avanceChecklist.set(null);
       return;
@@ -196,6 +198,12 @@ export class CicloCronogramaComponent {
           if (checklist.canAdvance) {
             this.avanceRechazoServidor.set(null);
           }
+        },
+        error: (err) => {
+          this.avanceChecklist.set(null);
+          this.avanceChecklistError.set(
+            extractErrorMessage(err, 'No se pudo verificar los requisitos de avance de etapa.')
+          );
         },
       });
   }
@@ -216,6 +224,7 @@ export class CicloCronogramaComponent {
           this.avanceRechazoServidor.set(null);
           this.ciclo.set(data);
           this.toastService.success('Etapa avanzada', `El ciclo avanzó a: ${data.estadoEtapaLabel}.`);
+          this.refreshAvanceChecklist(id);
         },
         error: (err) => {
           const detail = extractErrorMessage(
