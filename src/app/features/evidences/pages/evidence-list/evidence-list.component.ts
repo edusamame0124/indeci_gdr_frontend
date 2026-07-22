@@ -63,10 +63,9 @@ export class EvidenceListComponent {
     { code: 'OTRO', name: 'Otro formato' }
   ];
 
-  readonly canManageEvidence = computed(() => {
-    const actor = this.authService.functionalActor();
-    return actor === 'EVALUADOR' || actor === 'EVALUADOR_Y_EVALUADO';
-  });
+  readonly canManageEvidence = computed(() =>
+    this.authService.featureAccess()?.canManageEvidences ?? false
+  );
 
   readonly canReviewEvidence = computed(() =>
     this.authService.featureAccess()?.canReviewEvidences ?? false
