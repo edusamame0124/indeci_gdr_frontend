@@ -123,3 +123,17 @@ export interface PlanningChecklistApiResponse {
   pendientes: string[];
   bloqueantes: string[];
 }
+
+/** Ítem del checklist de avance de etapa (GET /admin/cycles/{id}/checklist-avance). */
+export interface CicloChecklistItemApiResponse {
+  code: string;
+  title: string;
+  status: 'PASSED' | 'FAILED';
+  detail: string | null;
+}
+
+/** Respuesta del endpoint GET /admin/cycles/{id}/checklist-avance */
+export interface CicloAvanceChecklistApiResponse {
+  canAdvance: boolean;
+  items: CicloChecklistItemApiResponse[];
+}

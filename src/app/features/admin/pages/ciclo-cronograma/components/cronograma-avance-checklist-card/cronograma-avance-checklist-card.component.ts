@@ -18,6 +18,7 @@ export class CronogramaAvanceChecklistCardComponent {
   readonly checklist = input.required<CronogramaAvanceChecklistResult>();
   readonly loading = input(false);
   readonly serverMessage = input<string | null>(null);
+  readonly transitionLabel = input('la siguiente etapa');
 
   statusLabel(item: CronogramaChecklistItem): string {
     return checklistStatusLabel(item.status);

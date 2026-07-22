@@ -40,8 +40,6 @@ const TRANSICION_LABEL: Record<string, string> = {
   CERRADO: 'cierre',
 };
 
-const ESTADO_PLANIFICACION = 'EN_PLANIFICACION';
-
 function mergeCronogramaConPlantilla(cronograma: CronogramaEtapaResponse[]): CronogramaEtapaResponse[] {
   const byEtapa = new Map(cronograma.map((item) => [item.etapa, item]));
   return ETAPAS_NORMATIVAS.map(({ etapa, etapaLabel }) => {
@@ -134,9 +132,6 @@ export class CicloCronogramaComponent {
     if (!this.canEdit() || !ciclo || !checklist) {
       return false;
     }
-    if (ciclo.estadoEtapa !== ESTADO_PLANIFICACION) {
-      return false;
-    }
     return !checklist.canAdvance || this.avanceRechazoServidor() !== null;
   });
 
@@ -148,11 +143,16 @@ export class CicloCronogramaComponent {
     this.canEdit() && this.progresoPorcentaje() < 100
   );
 
+  readonly siguienteEtapaLabel = computed(() => {
+    const transicion = this.ciclo()?.transicionesDisponibles[0];
+    if (!transicion) return 'la siguiente etapa';
+    return TRANSICION_LABEL[transicion] ?? transicion.toLowerCase().replace(/^en_/, '');
+  });
+
   readonly avanzarEtapaLabel = computed(() => {
     const transicion = this.ciclo()?.transicionesDisponibles[0];
     if (!transicion) return 'Avanzar etapa';
-    const label = TRANSICION_LABEL[transicion] ?? transicion.toLowerCase().replace(/^en_/, '');
-    return `Avanzar a ${label}`;
+    return `Avanzar a ${this.siguienteEtapaLabel()}`;
   });
 
   constructor() {
@@ -181,7 +181,7 @@ export class CicloCronogramaComponent {
 
   private refreshAvanceChecklist(cycleId: number): void {
     const ciclo = this.ciclo();
-    if (!ciclo || !this.canEdit() || ciclo.estadoEtapa !== ESTADO_PLANIFICACION) {
+    if (!ciclo || !this.canEdit() || ciclo.transicionesDisponibles.length === 0) {
       this.avanceChecklist.set(null);
       return;
     }
